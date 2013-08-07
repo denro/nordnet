@@ -6,471 +6,686 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strconv"
+	"sync"
 	"time"
 )
 
-type Result map[string]interface{}
-type ResultList []*Result
+type Params map[string]string
 
 type APIClient struct {
-	Service, Credentials, SessionKey string
-	ExpiresAt, LastUsageAt           time.Time
+	URL, Service, Credentials, SessionKey string
+	ExpiresAt, LastUsageAt                time.Time
 
 	http.Client
+	sync.Mutex
 }
 
-func NewAPIClient(credentials, service string) *APIClient {
-	return &APIClient{Credentials: credentials, Service: service}
+func NewAPIClient(credentials string) *APIClient {
+	return &APIClient{
+		Credentials: credentials,
+		Service:     "NEXTAPI",
+		URL:         "https://api.nordnet.se/next",
+	}
 }
 
-func (c *APIClient) SystemStatus() (*Result, error) {
-	res := &Result{}
+type SystemStatusResp struct {
+	Timestamp     int64  `json:"timestamp"`
+	ValidVersion  bool   `json:"valid_version"`
+	SystemRunnnig bool   `json:"system_running"`
+	SkipPhrase    bool   `json:"skip_phrase"`
+	Message       string `json:"message"`
+}
 
-	err := c.GetAndUnmarshal("https://api.test.nordnet.se/next/v1", res)
-	if err != nil {
+func (c *APIClient) SystemStatus() (*SystemStatusResp, error) {
+	res := &SystemStatusResp{}
+
+	if err := c.Perform("GET", "v1", nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) Login() (*Result, error) {
-	res := &Result{}
-
-	reqUrl, err := url.Parse("https://api.test.nordnet.se/next/v1/login")
-	if err != nil {
-		return nil, err
-	}
-
-	reqQuery := reqUrl.Query()
-	reqQuery.Set("auth", c.Credentials)
-	reqQuery.Set("service", c.Service)
-	reqUrl.RawQuery = reqQuery.Encode()
-
-	req, err := http.NewRequest("POST", reqUrl.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	err = c.DoAndUnmarshal(req, res)
-	if err != nil {
-		return nil, err
-	}
-
-	return res, err
+type feed struct {
+	Port      int64  `json:"port"`
+	Hostname  string `json:"hostname"`
+	Encrypted bool   `json:"encrypted"`
 }
 
-func (c *APIClient) Touch() (*Result, error) {
-	res := &Result{}
+type LoginResp struct {
+	SessionKey  string `json:"session_key"`
+	Environment string `json:"environment"`
+	ExpiresIn   int64  `json:"expires_in"`
+	PublicFeed  feed   `json:"public_feed"`
+	PrivateFeed feed   `json:"private_feed"`
+}
 
-	urlStr := fmt.Sprintf("https://api.test.nordnet.se/next/v1/login/%s", c.SessionKey)
-	req, err := http.NewRequest("PUT", urlStr, nil)
-	if err != nil {
+func (c *APIClient) Login() (*LoginResp, error) {
+	res := &LoginResp{}
+
+	c.Lock()
+	params := &Params{"auth": c.Credentials, "service": c.Service}
+	c.Unlock()
+
+	if err := c.Perform("POST", "v1/login", params, res); err != nil {
 		return nil, err
 	}
 
-	err = c.DoAndUnmarshal(req, res)
-	if err != nil {
+	c.Lock()
+	c.SessionKey = res.SessionKey
+	c.Unlock()
+
+	return res, nil
+}
+
+type LogoutResp struct {
+	LoggedIn bool `json:"logged_in"`
+}
+
+func (c *APIClient) Logout() (*LogoutResp, error) {
+	res := &LogoutResp{}
+
+	c.Lock()
+	path := fmt.Sprintf("v1/login/%s", c.SessionKey)
+	c.Unlock()
+
+	if err := c.Perform("DELETE", path, nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) Logout() (*Result, error) {
-	res := &Result{}
+type TouchResp struct {
+	LoggedIn bool `json:"logged_in"`
+}
 
-	urlStr := fmt.Sprintf("https://api.test.nordnet.se/next/v1/login/%s", c.SessionKey)
-	req, err := http.NewRequest("DELETE", urlStr, nil)
-	if err != nil {
-		return nil, err
-	}
+func (c *APIClient) Touch() (*TouchResp, error) {
+	res := &TouchResp{}
 
-	err = c.DoAndUnmarshal(req, res)
-	if err != nil {
+	c.Lock()
+	path := fmt.Sprintf("v1/login/%s", c.SessionKey)
+	c.Unlock()
+
+	if err := c.Perform("PUT", path, nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) RealtimeAccess() (*ResultList, error) {
-	res := &ResultList{}
+type RealtimeAccessResp []struct {
+	MarketId string `json:"marketID"`
+	Level    int64  `json:"level"`
+}
 
-	err := c.GetAndUnmarshal("https://api.test.nordnet.se/next/v1/realtime_access", res)
-	if err != nil {
+func (c *APIClient) RealtimeAccess() (*RealtimeAccessResp, error) {
+	res := &RealtimeAccessResp{}
+
+	if err := c.Perform("GET", "v1/realtime_access", nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) NewsSources() (*ResultList, error) {
-	res := &ResultList{}
+type NewsSourcesResp []struct {
+	Name     string `json:"name"`
+	Code     string `json:"code"`
+	Level    string `json:"level"`
+	SourceId int64  `json:"sourceid"`
+	ImageURL string `json:"imageurl"`
+}
 
-	err := c.GetAndUnmarshal("https://api.test.nordnet.se/next/v1/news_sources", res)
-	if err != nil {
+func (c *APIClient) NewsSources() (*NewsSourcesResp, error) {
+	res := &NewsSourcesResp{}
+
+	if err := c.Perform("GET", "v1/news_sources", nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) NewsItems(query, sourceIds string, count, after int64) (*ResultList, error) {
-	res := &ResultList{}
+type NewsItemsResp []struct {
+	DateTime string `json:"datetime"`
+	Headline string `json:"headline"`
+	ItemId   int64  `json:"itemid"`
+	SourceId int64  `json:"sourceid"`
+	Type     string `json:"type"`
+}
 
-	reqUrl, err := url.Parse("https://api.test.nordnet.se/next/v1/news_items")
-	if err != nil {
-		return nil, err
-	}
+func (c *APIClient) NewsItems(params *Params) (*NewsItemsResp, error) {
+	res := &NewsItemsResp{}
 
-	reqQuery := reqUrl.Query()
-	if query != "" {
-		reqQuery.Set("query", query)
-	}
-	if sourceIds != "" {
-		reqQuery.Set("sourceids", sourceIds)
-	}
-	if count != 0 {
-		reqQuery.Set("count", strconv.FormatInt(count, 10))
-	}
-	if after != 0 {
-		reqQuery.Set("after", strconv.FormatInt(after, 10))
-	}
-	reqUrl.RawQuery = reqQuery.Encode()
-
-	err = c.GetAndUnmarshal(reqUrl.String(), res)
-	if err != nil {
+	if err := c.Perform("GET", "v1/news_items", params, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) NewsItem(newsItemId int64) (*Result, error) {
-	res := &Result{}
+type NewsItemResp struct {
+	DateTime string `json:"datetime"`
+	Body     string `json:"body"`
+	Headline string `json:"headline"`
+	ItemId   int64  `json:"itemid"`
+	Lang     string `json:"lang"`
+	Preamble string `json:"preamble"`
+	SourceId int64  `json:"sourceid"`
+	Type     string `json:"type"`
+}
 
-	urlStr := fmt.Sprintf("https://api.test.nordnet.se/next/v1/news_items/%d", newsItemId)
-	err := c.GetAndUnmarshal(urlStr, res)
-	if err != nil {
+func (c *APIClient) NewsItem(newsItemId int64) (*NewsItemResp, error) {
+	res := &NewsItemResp{}
+
+	path := fmt.Sprintf("v1/news_items/%d", newsItemId)
+	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) Accounts() (*ResultList, error) {
-	res := &ResultList{}
+type AccountsResp []struct {
+	Id      string `json:"id"`
+	Default string `json:"default"`
+}
 
-	err := c.GetAndUnmarshal("https://api.test.nordnet.se/next/v1/accounts", res)
-	if err != nil {
+func (c *APIClient) Accounts() (*AccountsResp, error) {
+	res := &AccountsResp{}
+
+	if err := c.Perform("GET", "v1/accounts", nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) Account(accountId int64) (*Result, error) {
-	res := &Result{}
+type AccountResp struct {
+	AccountSum      float64 `json:"accountSum,string"`
+	FullMarketValue float64 `json:"fullMarketvalue,string"`
+	TradingPower    float64 `json:"tradingPower,string"`
+	AccountCurrency string  `json:"accountCurrency"`
+}
 
-	urlStr := fmt.Sprintf("https://api.test.nordnet.se/next/v1/accounts/%d", accountId)
-	err := c.GetAndUnmarshal(urlStr, res)
-	if err != nil {
+func (c *APIClient) Account(accountId string) (*AccountResp, error) {
+	res := &AccountResp{}
+
+	path := fmt.Sprintf("v1/accounts/%s", accountId)
+	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) AccountLedgers(accountId int64) (*ResultList, error) {
-	res := &ResultList{}
+type AccountLedgersResp []struct {
+	Currency      string  `json:"currency"`
+	AccountSum    float64 `json:"accountSum,string"`
+	AccountSumAcc float64 `json:"accountSumAcc,string"`
+	AccIntCred    float64 `json:"accIntCred,string"`
+	AccIntDeb     float64 `json:"accIntDeb,string"`
+}
 
-	urlStr := fmt.Sprintf("https://api.test.nordnet.se/next/v1/accounts/%d/ledgers", accountId)
-	err := c.GetAndUnmarshal(urlStr, res)
-	if err != nil {
+func (c *APIClient) AccountLedgers(accountId string) (*AccountLedgersResp, error) {
+	res := &AccountLedgersResp{}
+
+	path := fmt.Sprintf("v1/accounts/%s/ledgers", accountId)
+	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) AccountPositions(accountId int64) (*ResultList, error) {
-	res := &ResultList{}
+type AccountPositionsResp []struct {
+	AcqPrice       float64 `json:"acqPrice,string"`
+	AcqPriceAcc    float64 `json:"acqPriceAcc,string"`
+	PawnPercent    float64 `json:"pawnPercent,string"`
+	Qty            float64 `json:"qty,string"`
+	MarketValue    float64 `json:"marketValue,string"`
+	MarketValueAcc float64 `json:"marketValueAcc,string"`
 
-	urlStr := fmt.Sprintf("https://api.test.nordnet.se/next/v1/accounts/%d/positions", accountId)
-	err := c.GetAndUnmarshal(urlStr, res)
-	if err != nil {
+	Instrument struct {
+		MainMarketId    int64   `json:"mainMarketId,string"`
+		Identifier      string  `json:"identifier"`
+		Type            string  `json:"type"`
+		Currency        string  `json:"currency"`
+		MainMarketPrice float64 `json:"mainMarketPrice,string"`
+	} `json:"instrumentID"`
+}
+
+func (c *APIClient) AccountPositions(accountId string) (*AccountPositionsResp, error) {
+	res := &AccountPositionsResp{}
+
+	path := fmt.Sprintf("v1/accounts/%s/positions", accountId)
+	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) AccountOrders(accountId int64) (*ResultList, error) {
-	res := &ResultList{}
+type AccountOrdersResp []struct {
+	ExchangeOrderId string `json:"exchangeOrderID"`
+	OrderId         int64  `json:"orderID"`
 
-	urlStr := fmt.Sprintf("https://api.test.nordnet.se/next/v1/accounts/%d/orders", accountId)
-	err := c.GetAndUnmarshal(urlStr, res)
-	if err != nil {
+	ActivationCondition struct {
+		Type string `json:"type"`
+		Date string `json:"date"`
+
+		Price struct {
+			Value float64 `json:"value"`
+			Curr  string  `json:"curr"`
+		} `json:"price"`
+	} `json:"activationCondition"`
+
+	RegDate        int64  `json:"regdate"`
+	PriceCondition string `json:"priceCondition"`
+
+	Price struct {
+		Value float64 `json:"value"`
+		Curr  string  `json:"curr"`
+	} `json:"price"`
+
+	VolumeCondition string  `json:"volumeCondition"`
+	Volume          float64 `json:"volume"`
+	Side            string  `json:"side"`
+	TradedVolume    float64 `json:"tradedVolume"`
+	Accno           int64   `json:"accno"`
+
+	InstrumentId struct {
+		MarketId   int64  `json:"marketID"`
+		Identifier string `json:"identifier"`
+	} `json:"instrumentID"`
+
+	Validity struct {
+		Type string `json:"type"`
+		Date string `json:"date"`
+	} `json:"validity"`
+
+	OrderState string `json:"orderState"`
+	StatusText string `json:"statusText"`
+}
+
+func (c *APIClient) AccountOrders(accountId string) (*AccountOrdersResp, error) {
+	res := &AccountOrdersResp{}
+
+	path := fmt.Sprintf("v1/accounts/%s/orders", accountId)
+	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) AccountTrades(accountId int64) (*ResultList, error) {
-	res := &ResultList{}
+type AccountTradesResp []struct {
+	SecurityTrade struct {
+		Accno   string `json:"accno"`
+		OrderId int64  `json:"orderID,string"`
 
-	urlStr := fmt.Sprintf("https://api.test.nordnet.se/next/v1/accounts/%d/trades", accountId)
-	err := c.GetAndUnmarshal(urlStr, res)
-	if err != nil {
+		InstrumentId struct {
+			MarketId   int64  `json:"marketID,string"`
+			Identifier string `json:"identifier"`
+		} `json:"instrumentID"`
+
+		Volume    float64 `json:"volume,string"`
+		TradeTime string  `json:"tradetime"`
+
+		Price struct {
+			Value float64 `json:"value,string"`
+			Curr  string  `json:"curr"`
+		} `json:"price"`
+
+		Side    string `json:"side"`
+		TradeId string `json:"tradeID"`
+	} `json:"securityTrade"`
+}
+
+func (c *APIClient) AccountTrades(accountId string) (*AccountTradesResp, error) {
+	res := &AccountTradesResp{}
+
+	path := fmt.Sprintf("v1/accounts/%s/trades", accountId)
+	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) Instruments(query, typ, country string) (*ResultList, error) {
-	res := &ResultList{}
+type InstrumentsResp []struct {
+	Type       string `json:"type"`
+	LongName   string `json:"longname"`
+	ShortName  string `json:"shortname"`
+	MarketId   int64  `json:"marketID,string"`
+	MarketName string `json:"marketname"`
+	Country    string `json:"country"`
+	IsInCode   string `json:"isinCode"`
+	Identifier string `json:"identifier"`
+	Currency   string `json:"currency"`
+}
 
-	reqUrl, err := url.Parse("https://api.test.nordnet.se/next/v1/instruments")
-	if err != nil {
-		return nil, err
-	}
+func (c *APIClient) Instruments(params *Params) (*InstrumentsResp, error) {
+	res := &InstrumentsResp{}
 
-	reqQuery := reqUrl.Query()
-	if query != "" {
-		reqQuery.Set("query", query)
-	}
-	if typ != "" {
-		reqQuery.Set("type", typ)
-	}
-	if country != "" {
-		reqQuery.Set("country", country)
-	}
-	reqUrl.RawQuery = reqQuery.Encode()
-
-	err = c.GetAndUnmarshal(reqUrl.String(), res)
-	if err != nil {
+	if err := c.Perform("GET", "v1/instruments", params, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) Instrument(identifier string, marketId int64) (*Result, error) {
-	res := &Result{}
+type InstrumentResp struct {
+	Type       string `json:"type"`
+	LongName   string `json:"longname"`
+	ShortName  string `json:"shortname"`
+	MarketId   int64  `json:"marketID,string"`
+	MarketName string `json:"marketname"`
+	Country    string `json:"country"`
+	IsInCode   string `json:"isinCode"`
+	Identifier string `json:"identifier"`
+	Currency   string `json:"currency"`
+}
 
-	reqUrl, err := url.Parse("https://api.test.nordnet.se/next/v1/instruments")
-	if err != nil {
-		return nil, err
-	}
+func (c *APIClient) Instrument(params *Params) (*InstrumentResp, error) {
+	res := &InstrumentResp{}
 
-	reqQuery := reqUrl.Query()
-	reqQuery.Set("identifier", identifier)
-	reqQuery.Set("marketID", strconv.FormatInt(marketId, 10))
-	reqUrl.RawQuery = reqQuery.Encode()
-
-	err = c.GetAndUnmarshal(reqUrl.String(), res)
-	if err != nil {
+	if err := c.Perform("GET", "v1/instruments", params, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) ChartData(identifier string, marketId int64) (*ResultList, error) {
-	res := &ResultList{}
+type ChartDataResp []struct {
+	Timestamp string  `json:"timestamp"`
+	Change    float64 `json:"change"`
+	Volume    int64   `json:"volume"`
+	Price     float64 `json:"price"`
+}
 
-	reqUrl, err := url.Parse("https://api.test.nordnet.se/next/v1/chart_data")
-	if err != nil {
-		return nil, err
-	}
+func (c *APIClient) ChartData(params *Params) (*ChartDataResp, error) {
+	res := &ChartDataResp{}
 
-	reqQuery := reqUrl.Query()
-	reqQuery.Set("identifier", identifier)
-	reqQuery.Set("marketID", strconv.FormatInt(marketId, 10))
-	reqUrl.RawQuery = reqQuery.Encode()
-
-	err = c.GetAndUnmarshal(reqUrl.String(), res)
-	if err != nil {
+	if err := c.Perform("GET", "v1/chart_data", params, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) Lists() (*ResultList, error) {
-	res := &ResultList{}
+type ListsResp []struct {
+	Id      string `json:"id"`
+	Name    string `json:"name"`
+	Country string `json:"country"`
+}
 
-	err := c.GetAndUnmarshal("https://api.test.nordnet.se/next/v1/lists", res)
-	if err != nil {
+func (c *APIClient) Lists() (*ListsResp, error) {
+	res := &ListsResp{}
+
+	if err := c.Perform("GET", "v1/lists", nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) List(listId int64) (*ResultList, error) {
-	res := &ResultList{}
+type ListResp []struct {
+	ShortName  string `json:"shortname"`
+	MarketId   int64  `json:"marketID,string"`
+	Identifier string `json:"identifier"`
+}
 
-	url := fmt.Sprintf("https://api.test.nordnet.se/next/v1/lists/%d", listId)
-	err := c.GetAndUnmarshal(url, res)
-	if err != nil {
+func (c *APIClient) List(listId int64) (*ListResp, error) {
+	res := &ListResp{}
+
+	path := fmt.Sprintf("v1/lists/%d", listId)
+	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) Markets() (*ResultList, error) {
-	res := &ResultList{}
+type MarketsReps []struct {
+	Name       string `json:"name"`
+	Country    string `json:"country"`
+	MarketId   int64  `json:"marketID,string"`
+	OrderTypes []struct {
+		Text string `json:"text"`
+		Type string `json:"type"`
+	} `json:"ordertypes"`
+}
 
-	err := c.GetAndUnmarshal("https://api.test.nordnet.se/next/v1/markets", res)
-	if err != nil {
+func (c *APIClient) Markets() (*MarketsReps, error) {
+	res := &MarketsReps{}
+
+	if err := c.Perform("GET", "v1/markets", nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) MarketTradingDays(marketId int64) (*ResultList, error) {
-	res := &ResultList{}
+type MarketTradingDaysResp []struct {
+	Date        string `json:"date"`
+	DisplayDate string `json:"display_date"`
+}
 
-	urlStr := fmt.Sprintf("https://api.test.nordnet.se/next/v1/markets/%d/trading_days", marketId)
-	err := c.GetAndUnmarshal(urlStr, res)
-	if err != nil {
+func (c *APIClient) MarketTradingDays(marketId int64) (*MarketTradingDaysResp, error) {
+	res := &MarketTradingDaysResp{}
+
+	path := fmt.Sprintf("v1/markets/%d/trading_days", marketId)
+	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) Indices() (*ResultList, error) {
-	res := &ResultList{}
+type IndicesResp []struct {
+	Type     string `json:"type"`
+	LongName string `json:"longname"`
+	Source   string `json:"source"`
+	Country  string `json:"country"`
+	ImageURL string `json:"imageurl"`
+	Id       string `json:"id"`
+}
 
-	err := c.GetAndUnmarshal("https://api.test.nordnet.se/next/v1/indices", res)
-	if err != nil {
+func (c *APIClient) Indices() (*IndicesResp, error) {
+	res := &IndicesResp{}
+
+	if err := c.Perform("GET", "v1/indices", nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) Ticksizes(ticksizeId int64) (*ResultList, error) {
-	res := &ResultList{}
+type TicksizesResp []struct {
+	Tick     float64 `json:"tick"`
+	Above    float64 `json:"above"`
+	Decimals int64   `json:"decimals"`
+}
 
-	urlStr := fmt.Sprintf("https://api.test.nordnet.se/next/v1/ticksizes/%d", ticksizeId)
-	err := c.GetAndUnmarshal(urlStr, res)
-	if err != nil {
+func (c *APIClient) Ticksizes(ticksizeId int64) (*TicksizesResp, error) {
+	res := &TicksizesResp{}
+
+	path := fmt.Sprintf("v1/ticksizes/%d", ticksizeId)
+	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) DerivateCountries(derType string) (*ResultList, error) {
-	res := &ResultList{}
+type DerivateCountriesResp []string
 
-	urlStr := fmt.Sprintf("https://api.test.nordnet.se/next/v1/derivatives/%s", derType)
-	err := c.GetAndUnmarshal(urlStr, res)
-	if err != nil {
+func (c *APIClient) DerivateCountries(derType string) (*DerivateCountriesResp, error) {
+	res := &DerivateCountriesResp{}
+
+	path := fmt.Sprintf("v1/derivatives/%s", derType)
+	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) DerivateUnderlyings(derType, country string) (*ResultList, error) {
-	res := &ResultList{}
+type DerivateUnderlyingsResp []struct {
+	ShortName  string `json:"shortname"`
+	MarketId   int64  `json:"marketID,string"`
+	Identifier string `json:"identifier"`
+}
 
-	url := fmt.Sprintf("https://api.test.nordnet.se/next/v1/derivatives/%s/underlyings/%s", derType, country)
-	err := c.GetAndUnmarshal(url, res)
-	if err != nil {
+func (c *APIClient) DerivateUnderlyings(derType, country string) (*DerivateUnderlyingsResp, error) {
+	res := &DerivateUnderlyingsResp{}
+
+	path := fmt.Sprintf("v1/derivatives/%s/underlyings/%s", derType, country)
+	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) Derivatives(derType string, marketId int64, identifier string) (*ResultList, error) {
-	res := &ResultList{}
+type Derivatives []struct {
+	ShortName   string  `json:"shortname"`
+	Multipier   int64   `json:"multiplier,string"`
+	StrikePrice float64 `json:"strikeprice,string"`
+	MarketId    int64   `json:"marketID,string"`
+	Identifier  string  `json:"identifier"`
+	ExpiryDate  string  `json:"expirydate"`
+	ExpiryType  string  `json:"expirytype"`
+	Kind        string  `json:"kind"`
+	Currency    string  `json:"currency"`
+	CallPut     string  `json:"callPut"`
+}
 
-	urlStr := fmt.Sprintf("https://api.test.nordnet.se/next/v1/derivatives/%s/derivatives", derType)
-	reqUrl, err := url.Parse(urlStr)
-	if err != nil {
-		return nil, err
-	}
+func (c *APIClient) Derivatives(derType string, params *Params) (*Derivatives, error) {
+	res := &Derivatives{}
 
-	reqQuery := reqUrl.Query()
-	reqQuery.Set("marketID", strconv.FormatInt(marketId, 10))
-	reqQuery.Set("identifier", identifier)
-	reqUrl.RawQuery = reqQuery.Encode()
-
-	err = c.GetAndUnmarshal(reqUrl.String(), res)
-	if err != nil {
+	path := fmt.Sprintf("v1/derivatives/%s/derivatives", derType)
+	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) RelatedMarkets(identifier string, marketId int64) (*ResultList, error) {
-	res := &ResultList{}
+type RelatedMarketsResp []struct {
+	MarketId   int64  `json:"marketID"`
+	Identifier string `json:"identifier"`
+}
 
-	reqUrl, err := url.Parse("https://api.test.nordnet.se/next/v1/related_markets")
-	if err != nil {
-		return nil, err
-	}
+func (c *APIClient) RelatedMarkets(params *Params) (*RelatedMarketsResp, error) {
+	res := &RelatedMarketsResp{}
 
-	reqQuery := reqUrl.Query()
-	reqQuery.Set("identifier", identifier)
-	reqQuery.Set("marketID", strconv.FormatInt(marketId, 10))
-	reqUrl.RawQuery = reqQuery.Encode()
-
-	err = c.GetAndUnmarshal(reqUrl.String(), res)
-	if err != nil {
+	if err := c.Perform("GET", "v1/related_markets", params, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *APIClient) GetAndUnmarshal(url string, res interface{}) error {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
+type OrderResp struct {
+	OrderId     int64  `json:"orderID"`
+	ResultCode  string `json:"resultCode"`
+	OrderState  string `json:"orderState"`
+	AccNo       int64  `json:"accNo"`
+	ActionState string `json:"actionState"`
+}
+
+func (c *APIClient) CreateOrder(accountId string, params *Params) (*OrderResp, error) {
+	res := &OrderResp{}
+
+	path := fmt.Sprintf("v1/accounts/%s/orders", accountId)
+	if err := c.Perform("POST", path, params, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (c *APIClient) UpdateOrder(accountId string, orderId int64, params *Params) (*OrderResp, error) {
+	res := &OrderResp{}
+
+	path := fmt.Sprintf("v1/accounts/%s/orders/%d", accountId, orderId)
+	if err := c.Perform("PUT", path, params, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (c *APIClient) DeleteOrder(accountId string, orderId int64) (*OrderResp, error) {
+	res := &OrderResp{}
+
+	path := fmt.Sprintf("v1/accounts/%s/orders/%d", accountId, orderId)
+	if err := c.Perform("DELETE", path, nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (c *APIClient) Perform(method, path string, params *Params, res interface{}) error {
+	if reqURL, err := c.formatURL(path, params); err != nil {
 		return err
-	}
-
-	return c.DoAndUnmarshal(req, res)
-}
-
-func (c *APIClient) DoAndUnmarshal(req *http.Request, res interface{}) error {
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Accept-Language", "en")
-
-	if c.SessionKey != "" {
-		req.SetBasicAuth(c.SessionKey, c.SessionKey)
-	}
-
-	resp, err := c.Do(req)
-	if err != nil {
+	} else if req, err := http.NewRequest(method, reqURL.String(), nil); err != nil {
 		return err
-	}
-
-	c.LastUsageAt = time.Now()
-
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
+	} else if resp, err := c.perform(req); err != nil {
 		return err
-	}
-
-	err = json.Unmarshal(body, res)
-	if err != nil {
-		return err
+	} else {
+		defer resp.Body.Close()
+		if body, err := ioutil.ReadAll(resp.Body); err != nil {
+			return err
+		} else if err := json.Unmarshal(body, res); err != nil {
+			return err
+		}
 	}
 
 	return nil
+}
+
+func (c *APIClient) perform(req *http.Request) (*http.Response, error) {
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Accept-Language", "en")
+
+	c.Lock()
+	if c.SessionKey != "" {
+		req.SetBasicAuth(c.SessionKey, c.SessionKey)
+	}
+	c.Unlock()
+
+	if resp, err := c.Do(req); err != nil {
+		return nil, err
+	} else {
+		c.Lock()
+		c.LastUsageAt = time.Now()
+		c.Unlock()
+
+		return resp, nil
+	}
+}
+
+func (c *APIClient) formatURL(path string, params *Params) (*url.URL, error) {
+	c.Lock()
+	absURL := fmt.Sprintf("%s/%s", c.URL, path)
+	c.Unlock()
+
+	if reqURL, err := url.Parse(absURL); err != nil {
+		return nil, err
+	} else {
+		if params != nil {
+			reqQuery := reqURL.Query()
+			for key, value := range *params {
+				reqQuery.Set(key, value)
+			}
+			reqURL.RawQuery = reqQuery.Encode()
+		}
+
+		return reqURL, nil
+	}
 }
