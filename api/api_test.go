@@ -9,6 +9,11 @@ import (
 	"testing"
 )
 
+var (
+	client        = &APIClient{Version: "1"}
+	defSessionKey = "SessionKey"
+)
+
 var systemStatusJSON = `{
 	"message":"",
 	"valid_version":true,
@@ -18,10 +23,9 @@ var systemStatusJSON = `{
 }`
 
 func TestSystemStatusIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1", "", []byte(systemStatusJSON))
+	ts := setupTestServer(t, "GET", "/1", "", []byte(systemStatusJSON))
+	client.URL = ts.URL
 	defer ts.Close()
-
-	client := &APIClient{URL: ts.URL}
 
 	if _, err := client.SystemStatus(); err != nil {
 		t.Fatal(err)
@@ -38,10 +42,10 @@ var loginJSON = `{
 }`
 
 func TestLoginIntegration(t *testing.T) {
-	ts := setupTestServer(t, "POST", "/v1/login?auth=SECRET&service=TEST", "", []byte(loginJSON))
+	ts := setupTestServer(t, "POST", "/1/login?auth=SECRET&service=TEST", "", []byte(loginJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, Credentials: "SECRET", Service: "TEST", SessionKey: ""}
+	client := &APIClient{URL: ts.URL, Version: "1", Credentials: "SECRET", Service: "TEST", SessionKey: ""}
 	if _, err := client.Login(); err != nil {
 		t.Fatal(err)
 	}
@@ -50,10 +54,10 @@ func TestLoginIntegration(t *testing.T) {
 var logoutJSON = `{"logged_in":false}`
 
 func TestLogoutIntegrationt(t *testing.T) {
-	ts := setupTestServer(t, "DELETE", "/v1/login/SESSIONKEY", "SESSIONKEY", []byte(logoutJSON))
+	ts := setupTestServer(t, "DELETE", fmt.Sprintf("/1/login/%s", defSessionKey), defSessionKey, []byte(logoutJSON))
+	setupClient(ts.URL)
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
 	if _, err := client.Logout(); err != nil {
 		t.Fatal(err)
 	}
@@ -62,10 +66,10 @@ func TestLogoutIntegrationt(t *testing.T) {
 var touchJSON = `{"logged_in":true}`
 
 func TestTouchIntegration(t *testing.T) {
-	ts := setupTestServer(t, "PUT", "/v1/login/SESSIONKEY", "SESSIONKEY", []byte(touchJSON))
+	ts := setupTestServer(t, "PUT", fmt.Sprintf("/1/login/%s", defSessionKey), defSessionKey, []byte(touchJSON))
+	setupClient(ts.URL)
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
 	if _, err := client.Touch(); err != nil {
 		t.Fatal(err)
 	}
@@ -79,10 +83,10 @@ var realtimeAccessJSON = `[
 ]`
 
 func TestReatimeAccessIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/realtime_access", "SESSIONKEY", []byte(realtimeAccessJSON))
+	ts := setupTestServer(t, "GET", "/1/realtime_access", defSessionKey, []byte(realtimeAccessJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 	if _, err := client.RealtimeAccess(); err != nil {
 		t.Fatal(err)
 	}
@@ -95,10 +99,10 @@ var newsSourcesJSON = `[
 ]`
 
 func TestNewsSourcesIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/news_sources", "SESSIONKEY", []byte(newsSourcesJSON))
+	ts := setupTestServer(t, "GET", "/1/news_sources", defSessionKey, []byte(newsSourcesJSON))
+	setupClient(ts.URL)
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
 	if _, err := client.NewsSources(); err != nil {
 		t.Fatal(err)
 	}
@@ -111,10 +115,10 @@ var newsItemsJSON = `[
 ]`
 
 func TestNewsItemsIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/news_items", "SESSIONKEY", []byte(newsItemsJSON))
+	ts := setupTestServer(t, "GET", "/1/news_items", defSessionKey, []byte(newsItemsJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 	if _, err := client.NewsItems(nil); err != nil {
 		t.Fatal(err)
 	}
@@ -133,24 +137,24 @@ var newsItemJSON = `{
 }`
 
 func TestNewsItemIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/news_items/4711", "SESSIONKEY", []byte(newsItemJSON))
+	ts := setupTestServer(t, "GET", "/1/news_items/4711", defSessionKey, []byte(newsItemJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 	if _, err := client.NewsItem(4711); err != nil {
 		t.Fatal(err)
 	}
 }
 
 var accountsJSON = `[
-	{"alias":null,"default":"true","id":"1000000"}
+	{"alias":null,"default":true,"id":"1000000"}
 ]`
 
 func TestAccountsIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/accounts", "SESSIONKEY", []byte(accountsJSON))
+	ts := setupTestServer(t, "GET", "/1/accounts", defSessionKey, []byte(accountsJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 	if _, err := client.Accounts(); err != nil {
 		t.Fatal(err)
 	}
@@ -172,10 +176,10 @@ var accountJSON = `{
 }`
 
 func TestAccountIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/accounts/1000000", "SESSIONKEY", []byte(accountJSON))
+	ts := setupTestServer(t, "GET", "/1/accounts/1000000", defSessionKey, []byte(accountJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 	if _, err := client.Account("1000000"); err != nil {
 		t.Fatal(err)
 	}
@@ -192,10 +196,10 @@ var accountLedgersJSON = `[
 ]`
 
 func TestAccountLedgersIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/accounts/1000000/ledgers", "SESSIONKEY", []byte(accountLedgersJSON))
+	ts := setupTestServer(t, "GET", "/1/accounts/1000000/ledgers", defSessionKey, []byte(accountLedgersJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 
 	if _, err := client.AccountLedgers("1000000"); err != nil {
 		t.Fatal(err)
@@ -222,10 +226,10 @@ var accountPositionsJSON = `[
 ]`
 
 func TestAccountPositionsIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/accounts/1000000/positions", "SESSIONKEY", []byte(accountPositionsJSON))
+	ts := setupTestServer(t, "GET", "/1/accounts/1000000/positions", defSessionKey, []byte(accountPositionsJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 
 	if _, err := client.AccountPositions("1000000"); err != nil {
 		t.Fatal(err)
@@ -253,10 +257,10 @@ var accountOrdersJSON = `[
 ]`
 
 func TestAccountOrdersIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/accounts/1000000/orders", "SESSIONKEY", []byte(accountOrdersJSON))
+	ts := setupTestServer(t, "GET", "/1/accounts/1000000/orders", defSessionKey, []byte(accountOrdersJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 
 	if _, err := client.AccountOrders("1000000"); err != nil {
 		t.Fatal(err)
@@ -280,10 +284,10 @@ var accountTradesJSON = `[
 ]`
 
 func TestAccountTradesIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/accounts/1000000/trades", "SESSIONKEY", []byte(accountTradesJSON))
+	ts := setupTestServer(t, "GET", "/1/accounts/1000000/trades", defSessionKey, []byte(accountTradesJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 
 	if _, err := client.AccountTrades("1000000"); err != nil {
 		t.Fatal(err)
@@ -305,10 +309,10 @@ var instrumentsJSON = `[
 ]`
 
 func TestInstrumentsIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/instruments?country=SE&query=ERI&type=A", "SESSIONKEY", []byte(instrumentsJSON))
+	ts := setupTestServer(t, "GET", "/1/instruments?country=SE&query=ERI&type=A", defSessionKey, []byte(instrumentsJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 
 	if _, err := client.Instruments(&Params{"query": "ERI", "type": "A", "country": "SE"}); err != nil {
 		t.Fatal(err)
@@ -330,10 +334,10 @@ var instrumentJSON = `{
 }`
 
 func TestInstrumentIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/instruments?identifier=101&marketID=11", "SESSIONKEY", []byte(instrumentJSON))
+	ts := setupTestServer(t, "GET", "/1/instruments?identifier=101&marketID=11", defSessionKey, []byte(instrumentJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 
 	if _, err := client.Instrument(&Params{"identifier": "101", "marketID": "11"}); err != nil {
 		t.Fatal(err)
@@ -345,10 +349,10 @@ var chartDataJSON = `[
 ]`
 
 func TestChartDataIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/chart_data?identifier=101&marketID=11", "SESSIONKEY", []byte(chartDataJSON))
+	ts := setupTestServer(t, "GET", "/1/chart_data?identifier=101&marketID=11", defSessionKey, []byte(chartDataJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 
 	if _, err := client.ChartData(&Params{"identifier": "101", "marketID": "11"}); err != nil {
 		t.Fatal(err)
@@ -361,10 +365,10 @@ var listsJSON = `[
 ]`
 
 func TestListsIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/lists", "SESSIONKEY", []byte(listsJSON))
+	ts := setupTestServer(t, "GET", "/1/lists", defSessionKey, []byte(listsJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 
 	if _, err := client.Lists(); err != nil {
 		t.Fatal(err)
@@ -377,10 +381,10 @@ var listJSON = `[
 ]`
 
 func TestListIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/lists/6", "SESSIONKEY", []byte(listJSON))
+	ts := setupTestServer(t, "GET", "/1/lists/6", defSessionKey, []byte(listJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 
 	if _, err := client.List(6); err != nil {
 		t.Fatal(err)
@@ -399,10 +403,10 @@ var marketsJSON = `[
 ]`
 
 func TestMarketsIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/markets", "SESSIONKEY", []byte(listJSON))
+	ts := setupTestServer(t, "GET", "/1/markets", defSessionKey, []byte(listJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 
 	if _, err := client.Markets(); err != nil {
 		t.Fatal(err)
@@ -415,10 +419,10 @@ var marketTradingDaysJSON = `[
 ]`
 
 func TestMarketTradingDaysIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/markets/11/trading_days", "SESSIONKEY", []byte(marketTradingDaysJSON))
+	ts := setupTestServer(t, "GET", "/1/markets/11/trading_days", defSessionKey, []byte(marketTradingDaysJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 
 	if _, err := client.MarketTradingDays(11); err != nil {
 		t.Fatal(err)
@@ -443,10 +447,10 @@ var indicesJSON = `[
 ]`
 
 func TestIndicesIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/indices", "SESSIONKEY", []byte(indicesJSON))
+	ts := setupTestServer(t, "GET", "/1/indices", defSessionKey, []byte(indicesJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 
 	if _, err := client.Indices(); err != nil {
 		t.Fatal(err)
@@ -460,10 +464,10 @@ var ticksizesJSON = `[
 ]`
 
 func TestTicksizesIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/ticksizes/11002", "SESSIONKEY", []byte(ticksizesJSON))
+	ts := setupTestServer(t, "GET", "/1/ticksizes/11002", defSessionKey, []byte(ticksizesJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 
 	if _, err := client.Ticksizes(11002); err != nil {
 		t.Fatal(err)
@@ -473,10 +477,10 @@ func TestTicksizesIntegration(t *testing.T) {
 var derivateCountriesJSON = `["SE","FI","NO"]`
 
 func TestDerivateContriesIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/derivatives/A", "SESSIONKEY", []byte(derivateCountriesJSON))
+	ts := setupTestServer(t, "GET", "/1/derivatives/A", defSessionKey, []byte(derivateCountriesJSON))
 	defer ts.Close()
 
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
+	setupClient(ts.URL)
 
 	if _, err := client.DerivateCountries("A"); err != nil {
 		t.Fatal(err)
@@ -491,10 +495,9 @@ var derivateUnderlyingsJSON = `[
 ]`
 
 func TestDerivateUnderyingsIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/derivatives/O/underlyings/SE", "SESSIONKEY", []byte(derivateUnderlyingsJSON))
+	ts := setupTestServer(t, "GET", "/1/derivatives/O/underlyings/SE", defSessionKey, []byte(derivateUnderlyingsJSON))
+	setupClient(ts.URL)
 	defer ts.Close()
-
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
 
 	if _, err := client.DerivateUnderlyings("O", "SE"); err != nil {
 		t.Fatal(err)
@@ -518,10 +521,9 @@ var derivateJSON = `[
 ]`
 
 func TestDerivativesIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/derivatives/WNT/derivatives", "SESSIONKEY", []byte(derivateJSON))
+	ts := setupTestServer(t, "GET", "/1/derivatives/WNT/derivatives", defSessionKey, []byte(derivateJSON))
+	setupClient(ts.URL)
 	defer ts.Close()
-
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
 
 	params := &Params{"identifier": "101", "marketID": "11"}
 	if _, err := client.Derivatives("WNT", params); err != nil {
@@ -535,10 +537,9 @@ var relatedMarketsJSON = `[
 ]`
 
 func TestRelatedMarketsIntegration(t *testing.T) {
-	ts := setupTestServer(t, "GET", "/v1/related_markets?identifier=101&marketID=11", "SESSIONKEY", []byte(relatedMarketsJSON))
+	ts := setupTestServer(t, "GET", "/1/related_markets?identifier=101&marketID=11", defSessionKey, []byte(relatedMarketsJSON))
+	setupClient(ts.URL)
 	defer ts.Close()
-
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
 
 	params := &Params{"identifier": "101", "marketID": "11"}
 	if _, err := client.RelatedMarkets(params); err != nil {
@@ -555,10 +556,9 @@ var createOrderJSON = `{
 }`
 
 func TestCreateOrderIntegration(t *testing.T) {
-	ts := setupTestServer(t, "POST", "/v1/accounts/1000000/orders?currency=SEK&identifier=101&marketID=11&price=65&side=buy&volume=100", "SESSIONKEY", []byte(createOrderJSON))
+	ts := setupTestServer(t, "POST", "/1/accounts/1000000/orders?currency=SEK&identifier=101&marketID=11&price=65&side=buy&volume=100", defSessionKey, []byte(createOrderJSON))
+	setupClient(ts.URL)
 	defer ts.Close()
-
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
 
 	params := &Params{"identifier": "101", "marketID": "11", "price": "65", "volume": "100", "side": "buy", "currency": "SEK"}
 	if _, err := client.CreateOrder("1000000", params); err != nil {
@@ -575,10 +575,9 @@ var updateOrderJSON = `{
 }`
 
 func TestUpdateOrderIntegration(t *testing.T) {
-	ts := setupTestServer(t, "PUT", "/v1/accounts/1000000/orders/684870?price=68", "SESSIONKEY", []byte(updateOrderJSON))
+	ts := setupTestServer(t, "PUT", "/1/accounts/1000000/orders/684870?price=68", defSessionKey, []byte(updateOrderJSON))
+	setupClient(ts.URL)
 	defer ts.Close()
-
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
 
 	if _, err := client.UpdateOrder("1000000", 684870, &Params{"price": "68"}); err != nil {
 		t.Fatal(err)
@@ -594,10 +593,9 @@ var deleteOrderJSON = `{
 }`
 
 func TestDeleteOrderIntegration(t *testing.T) {
-	ts := setupTestServer(t, "DELETE", "/v1/accounts/1000000/orders/684870", "SESSIONKEY", []byte(deleteOrderJSON))
+	ts := setupTestServer(t, "DELETE", "/1/accounts/1000000/orders/684870", defSessionKey, []byte(deleteOrderJSON))
+	setupClient(ts.URL)
 	defer ts.Close()
-
-	client := &APIClient{URL: ts.URL, SessionKey: "SESSIONKEY"}
 
 	if _, err := client.DeleteOrder("1000000", 684870); err != nil {
 		t.Fatal(err)
@@ -622,4 +620,11 @@ func setupTestServer(t *testing.T, method, path, session string, stubData []byte
 	})
 
 	return httptest.NewServer(handler)
+}
+
+func setupClient(u string) {
+	client.Lock()
+	client.URL = u
+	client.SessionKey = defSessionKey
+	client.Unlock()
 }

@@ -38,3 +38,7 @@ func (f *Feed) Login() error {
 	loginCmd := &FeedCmd{"login", authData}
 	return f.WriteJSON(loginCmd)
 }
+
+func (f *Feed) Close() error {
+  return f.Conn.Close()
+}

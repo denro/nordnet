@@ -10,11 +10,17 @@ import (
 	"time"
 )
 
+const (
+	NNBASEURL    = `https://api.nordnet.se/next`
+	NNSERVICE    = `NEXT`
+	NNAPIVERSION = `1`
+)
+
 type Params map[string]string
 
 type APIClient struct {
-	URL, Service, Credentials, SessionKey string
-	ExpiresAt, LastUsageAt                time.Time
+	URL, Service, Version, Credentials, SessionKey string
+	ExpiresAt, LastUsageAt                         time.Time
 
 	http.Client
 	sync.Mutex
@@ -22,9 +28,10 @@ type APIClient struct {
 
 func NewAPIClient(credentials string) *APIClient {
 	return &APIClient{
+		URL:         NNBASEURL,
+		Service:     NNSERVICE,
+		Version:     NNAPIVERSION,
 		Credentials: credentials,
-		Service:     "NEXTAPI",
-		URL:         "https://api.nordnet.se/next",
 	}
 }
 
@@ -39,7 +46,7 @@ type SystemStatusResp struct {
 func (c *APIClient) SystemStatus() (*SystemStatusResp, error) {
 	res := &SystemStatusResp{}
 
-	if err := c.Perform("GET", "v1", nil, res); err != nil {
+	if err := c.Perform("GET", "", nil, res); err != nil {
 		return nil, err
 	}
 
@@ -67,7 +74,7 @@ func (c *APIClient) Login() (*LoginResp, error) {
 	params := &Params{"auth": c.Credentials, "service": c.Service}
 	c.Unlock()
 
-	if err := c.Perform("POST", "v1/login", params, res); err != nil {
+	if err := c.Perform("POST", "login", params, res); err != nil {
 		return nil, err
 	}
 
@@ -86,7 +93,7 @@ func (c *APIClient) Logout() (*LogoutResp, error) {
 	res := &LogoutResp{}
 
 	c.Lock()
-	path := fmt.Sprintf("v1/login/%s", c.SessionKey)
+	path := fmt.Sprintf("login/%s", c.SessionKey)
 	c.Unlock()
 
 	if err := c.Perform("DELETE", path, nil, res); err != nil {
@@ -104,7 +111,7 @@ func (c *APIClient) Touch() (*TouchResp, error) {
 	res := &TouchResp{}
 
 	c.Lock()
-	path := fmt.Sprintf("v1/login/%s", c.SessionKey)
+	path := fmt.Sprintf("login/%s", c.SessionKey)
 	c.Unlock()
 
 	if err := c.Perform("PUT", path, nil, res); err != nil {
@@ -122,7 +129,7 @@ type RealtimeAccessResp []struct {
 func (c *APIClient) RealtimeAccess() (*RealtimeAccessResp, error) {
 	res := &RealtimeAccessResp{}
 
-	if err := c.Perform("GET", "v1/realtime_access", nil, res); err != nil {
+	if err := c.Perform("GET", "realtime_access", nil, res); err != nil {
 		return nil, err
 	}
 
@@ -140,7 +147,7 @@ type NewsSourcesResp []struct {
 func (c *APIClient) NewsSources() (*NewsSourcesResp, error) {
 	res := &NewsSourcesResp{}
 
-	if err := c.Perform("GET", "v1/news_sources", nil, res); err != nil {
+	if err := c.Perform("GET", "news_sources", nil, res); err != nil {
 		return nil, err
 	}
 
@@ -158,7 +165,7 @@ type NewsItemsResp []struct {
 func (c *APIClient) NewsItems(params *Params) (*NewsItemsResp, error) {
 	res := &NewsItemsResp{}
 
-	if err := c.Perform("GET", "v1/news_items", params, res); err != nil {
+	if err := c.Perform("GET", "news_items", params, res); err != nil {
 		return nil, err
 	}
 
@@ -179,7 +186,7 @@ type NewsItemResp struct {
 func (c *APIClient) NewsItem(newsItemId int64) (*NewsItemResp, error) {
 	res := &NewsItemResp{}
 
-	path := fmt.Sprintf("v1/news_items/%d", newsItemId)
+	path := fmt.Sprintf("news_items/%d", newsItemId)
 	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
@@ -189,13 +196,13 @@ func (c *APIClient) NewsItem(newsItemId int64) (*NewsItemResp, error) {
 
 type AccountsResp []struct {
 	Id      string `json:"id"`
-	Default string `json:"default"`
+	Default bool   `json:"default"`
 }
 
 func (c *APIClient) Accounts() (*AccountsResp, error) {
 	res := &AccountsResp{}
 
-	if err := c.Perform("GET", "v1/accounts", nil, res); err != nil {
+	if err := c.Perform("GET", "accounts", nil, res); err != nil {
 		return nil, err
 	}
 
@@ -212,7 +219,7 @@ type AccountResp struct {
 func (c *APIClient) Account(accountId string) (*AccountResp, error) {
 	res := &AccountResp{}
 
-	path := fmt.Sprintf("v1/accounts/%s", accountId)
+	path := fmt.Sprintf("accounts/%s", accountId)
 	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
@@ -231,7 +238,7 @@ type AccountLedgersResp []struct {
 func (c *APIClient) AccountLedgers(accountId string) (*AccountLedgersResp, error) {
 	res := &AccountLedgersResp{}
 
-	path := fmt.Sprintf("v1/accounts/%s/ledgers", accountId)
+	path := fmt.Sprintf("accounts/%s/ledgers", accountId)
 	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
@@ -259,7 +266,7 @@ type AccountPositionsResp []struct {
 func (c *APIClient) AccountPositions(accountId string) (*AccountPositionsResp, error) {
 	res := &AccountPositionsResp{}
 
-	path := fmt.Sprintf("v1/accounts/%s/positions", accountId)
+	path := fmt.Sprintf("accounts/%s/positions", accountId)
 	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
@@ -312,7 +319,7 @@ type AccountOrdersResp []struct {
 func (c *APIClient) AccountOrders(accountId string) (*AccountOrdersResp, error) {
 	res := &AccountOrdersResp{}
 
-	path := fmt.Sprintf("v1/accounts/%s/orders", accountId)
+	path := fmt.Sprintf("accounts/%s/orders", accountId)
 	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
@@ -346,7 +353,7 @@ type AccountTradesResp []struct {
 func (c *APIClient) AccountTrades(accountId string) (*AccountTradesResp, error) {
 	res := &AccountTradesResp{}
 
-	path := fmt.Sprintf("v1/accounts/%s/trades", accountId)
+	path := fmt.Sprintf("accounts/%s/trades", accountId)
 	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
@@ -369,7 +376,7 @@ type InstrumentsResp []struct {
 func (c *APIClient) Instruments(params *Params) (*InstrumentsResp, error) {
 	res := &InstrumentsResp{}
 
-	if err := c.Perform("GET", "v1/instruments", params, res); err != nil {
+	if err := c.Perform("GET", "instruments", params, res); err != nil {
 		return nil, err
 	}
 
@@ -391,7 +398,7 @@ type InstrumentResp struct {
 func (c *APIClient) Instrument(params *Params) (*InstrumentResp, error) {
 	res := &InstrumentResp{}
 
-	if err := c.Perform("GET", "v1/instruments", params, res); err != nil {
+	if err := c.Perform("GET", "instruments", params, res); err != nil {
 		return nil, err
 	}
 
@@ -408,7 +415,7 @@ type ChartDataResp []struct {
 func (c *APIClient) ChartData(params *Params) (*ChartDataResp, error) {
 	res := &ChartDataResp{}
 
-	if err := c.Perform("GET", "v1/chart_data", params, res); err != nil {
+	if err := c.Perform("GET", "chart_data", params, res); err != nil {
 		return nil, err
 	}
 
@@ -424,7 +431,7 @@ type ListsResp []struct {
 func (c *APIClient) Lists() (*ListsResp, error) {
 	res := &ListsResp{}
 
-	if err := c.Perform("GET", "v1/lists", nil, res); err != nil {
+	if err := c.Perform("GET", "lists", nil, res); err != nil {
 		return nil, err
 	}
 
@@ -440,7 +447,7 @@ type ListResp []struct {
 func (c *APIClient) List(listId int64) (*ListResp, error) {
 	res := &ListResp{}
 
-	path := fmt.Sprintf("v1/lists/%d", listId)
+	path := fmt.Sprintf("lists/%d", listId)
 	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
@@ -461,7 +468,7 @@ type MarketsReps []struct {
 func (c *APIClient) Markets() (*MarketsReps, error) {
 	res := &MarketsReps{}
 
-	if err := c.Perform("GET", "v1/markets", nil, res); err != nil {
+	if err := c.Perform("GET", "markets", nil, res); err != nil {
 		return nil, err
 	}
 
@@ -476,7 +483,7 @@ type MarketTradingDaysResp []struct {
 func (c *APIClient) MarketTradingDays(marketId int64) (*MarketTradingDaysResp, error) {
 	res := &MarketTradingDaysResp{}
 
-	path := fmt.Sprintf("v1/markets/%d/trading_days", marketId)
+	path := fmt.Sprintf("markets/%d/trading_days", marketId)
 	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
@@ -496,7 +503,7 @@ type IndicesResp []struct {
 func (c *APIClient) Indices() (*IndicesResp, error) {
 	res := &IndicesResp{}
 
-	if err := c.Perform("GET", "v1/indices", nil, res); err != nil {
+	if err := c.Perform("GET", "indices", nil, res); err != nil {
 		return nil, err
 	}
 
@@ -512,7 +519,7 @@ type TicksizesResp []struct {
 func (c *APIClient) Ticksizes(ticksizeId int64) (*TicksizesResp, error) {
 	res := &TicksizesResp{}
 
-	path := fmt.Sprintf("v1/ticksizes/%d", ticksizeId)
+	path := fmt.Sprintf("ticksizes/%d", ticksizeId)
 	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
@@ -525,7 +532,7 @@ type DerivateCountriesResp []string
 func (c *APIClient) DerivateCountries(derType string) (*DerivateCountriesResp, error) {
 	res := &DerivateCountriesResp{}
 
-	path := fmt.Sprintf("v1/derivatives/%s", derType)
+	path := fmt.Sprintf("derivatives/%s", derType)
 	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
@@ -542,7 +549,7 @@ type DerivateUnderlyingsResp []struct {
 func (c *APIClient) DerivateUnderlyings(derType, country string) (*DerivateUnderlyingsResp, error) {
 	res := &DerivateUnderlyingsResp{}
 
-	path := fmt.Sprintf("v1/derivatives/%s/underlyings/%s", derType, country)
+	path := fmt.Sprintf("derivatives/%s/underlyings/%s", derType, country)
 	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
@@ -566,7 +573,7 @@ type Derivatives []struct {
 func (c *APIClient) Derivatives(derType string, params *Params) (*Derivatives, error) {
 	res := &Derivatives{}
 
-	path := fmt.Sprintf("v1/derivatives/%s/derivatives", derType)
+	path := fmt.Sprintf("derivatives/%s/derivatives", derType)
 	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
@@ -582,7 +589,7 @@ type RelatedMarketsResp []struct {
 func (c *APIClient) RelatedMarkets(params *Params) (*RelatedMarketsResp, error) {
 	res := &RelatedMarketsResp{}
 
-	if err := c.Perform("GET", "v1/related_markets", params, res); err != nil {
+	if err := c.Perform("GET", "related_markets", params, res); err != nil {
 		return nil, err
 	}
 
@@ -600,7 +607,7 @@ type OrderResp struct {
 func (c *APIClient) CreateOrder(accountId string, params *Params) (*OrderResp, error) {
 	res := &OrderResp{}
 
-	path := fmt.Sprintf("v1/accounts/%s/orders", accountId)
+	path := fmt.Sprintf("accounts/%s/orders", accountId)
 	if err := c.Perform("POST", path, params, res); err != nil {
 		return nil, err
 	}
@@ -611,7 +618,7 @@ func (c *APIClient) CreateOrder(accountId string, params *Params) (*OrderResp, e
 func (c *APIClient) UpdateOrder(accountId string, orderId int64, params *Params) (*OrderResp, error) {
 	res := &OrderResp{}
 
-	path := fmt.Sprintf("v1/accounts/%s/orders/%d", accountId, orderId)
+	path := fmt.Sprintf("accounts/%s/orders/%d", accountId, orderId)
 	if err := c.Perform("PUT", path, params, res); err != nil {
 		return nil, err
 	}
@@ -622,7 +629,7 @@ func (c *APIClient) UpdateOrder(accountId string, orderId int64, params *Params)
 func (c *APIClient) DeleteOrder(accountId string, orderId int64) (*OrderResp, error) {
 	res := &OrderResp{}
 
-	path := fmt.Sprintf("v1/accounts/%s/orders/%d", accountId, orderId)
+	path := fmt.Sprintf("accounts/%s/orders/%d", accountId, orderId)
 	if err := c.Perform("DELETE", path, nil, res); err != nil {
 		return nil, err
 	}
@@ -671,8 +678,13 @@ func (c *APIClient) perform(req *http.Request) (*http.Response, error) {
 }
 
 func (c *APIClient) formatURL(path string, params *Params) (*url.URL, error) {
+	var absURL string
 	c.Lock()
-	absURL := fmt.Sprintf("%s/%s", c.URL, path)
+	baseURL := fmt.Sprintf("%s/%s", c.URL, c.Version)
+	if path != "" {
+		baseURL += "/"
+	}
+	absURL = baseURL + path
 	c.Unlock()
 
 	if reqURL, err := url.Parse(absURL); err != nil {
