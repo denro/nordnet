@@ -13,20 +13,14 @@ import (
 )
 
 var (
-	pemData = []byte(`-----BEGIN PUBLIC KEY----- ...  -----END PUBLIC KEY-----`) 
+	pemData = []byte(`-----BEGIN PUBLIC KEY-----`) 
 	user = []byte(`...`)
 	pass = []byte(`...`)
 )
 
 func main() {
-	cred, err := util.GenerateCredentials(user, pass, pemData)
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-
-	client := api.NewAPIClientwLogin(*cred)
-  
+  cred, _ := util.GenerateCredentials(user, pass, pemData)
+  client := api.NewAPIClientwLogin(*cred)
   log.Println(client.Accounts())
 }
-
 ```
