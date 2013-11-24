@@ -13,13 +13,9 @@ import (
 )
 
 var (
-	pemData = []byte(`
------BEGIN PUBLIC KEY-----
-...
------END PUBLIC KEY-----
-`)
-	user = []byte("...")
-	pass = []byte("...")
+	pemData = []byte(`-----BEGIN PUBLIC KEY----- ...  -----END PUBLIC KEY-----`) 
+	user = []byte(`...`)
+	pass = []byte(`...`)
 )
 
 func main() {
@@ -33,4 +29,4 @@ func main() {
   log.Println(client.Accounts())
 }
 
-``
+```
