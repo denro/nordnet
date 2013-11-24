@@ -12,7 +12,7 @@ import (
 
 const (
 	NNBASEURL    = `https://api.nordnet.se/next`
-	NNSERVICE    = `NEXT`
+	NNSERVICE    = `NEXTAPI`
 	NNAPIVERSION = `1`
 )
 
@@ -659,7 +659,7 @@ func (c *APIClient) Perform(method, path string, params *Params, res interface{}
 func (c *APIClient) perform(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Accept-Language", "en")
-  req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	c.Lock()
 	if c.SessionKey != "" {

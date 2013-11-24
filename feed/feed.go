@@ -40,5 +40,5 @@ func (f *Feed) Login() error {
 }
 
 func (f *Feed) Close() error {
-  return f.Conn.Close()
+	return f.Conn.Close()
 }

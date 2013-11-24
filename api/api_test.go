@@ -17,13 +17,13 @@ var (
 var errorJSON = `{"error":"SOME ERROR"}`
 
 func TestErrorIntegration(t *testing.T) {
-  ts := setupTestServer(t, "GET", "/1","",[]byte(errorJSON))
-  client.URL = ts.URL
-  defer ts.Close()
+	ts := setupTestServer(t, "GET", "/1", "", []byte(errorJSON))
+	client.URL = ts.URL
+	defer ts.Close()
 
-  if _, err := client.SystemStatus(); err != nil {
-    t.Fatal(err)
-  }
+	if _, err := client.SystemStatus(); err != nil {
+		t.Fatal(err)
+	}
 }
 
 var systemStatusJSON = `{
@@ -55,9 +55,9 @@ var loginJSON = `{
 
 func TestLoginIntegration(t *testing.T) {
 	ts := setupTestServer(t, "POST", "/1/login?auth=SECRET&service=TEST", "", []byte(loginJSON))
-  client.URL = ts.URL
-  client.Credentials="SECRET"
-  client.Service= "TEST"
+	client.URL = ts.URL
+	client.Credentials = "SECRET"
+	client.Service = "TEST"
 	defer ts.Close()
 
 	if _, err := client.Login(); err != nil {
@@ -611,11 +611,11 @@ func setupTestServer(t *testing.T, method, path, session string, stubData []byte
 		} else if auth := r.Header.Get("Authorization"); auth != "" {
 			if decoded, err := base64.StdEncoding.DecodeString(auth[6:]); err != nil {
 				t.Fatal(err)
-      } else if userpass := session + ":" + session; userpass != string(decoded) {
+			} else if userpass := session + ":" + session; userpass != string(decoded) {
 				t.Fatal(errors.New(fmt.Sprintln("Session was expected to be:", userpass, "got:", string(decoded))))
-      } else if userpass == ":" {
-        t.Fatal(errors.New(fmt.Sprintln("No pass provided")))
-      }
+			} else if userpass == ":" {
+				t.Fatal(errors.New(fmt.Sprintln("No pass provided")))
+			}
 		}
 
 		w.Write(stubData)
@@ -626,7 +626,7 @@ func setupTestServer(t *testing.T, method, path, session string, stubData []byte
 
 func setupClient(u string) {
 	client.Lock()
-  client.Version = "1"
+	client.Version = "1"
 	client.SessionKey = defSessionKey
 	client.URL = u
 	client.Unlock()
