@@ -35,6 +35,16 @@ func NewAPIClient(credentials string) *APIClient {
 	}
 }
 
+func NewAPIClientwLogin(cred string) *APIClient {
+	client := make(chan *APIClient)
+	go func(c *APIClient) {
+		c.Login()
+		client <- c
+	}(NewAPIClient(cred))
+
+	return <-client
+}
+
 type SystemStatusResp struct {
 	Timestamp     int64  `json:"timestamp"`
 	ValidVersion  bool   `json:"valid_version"`
