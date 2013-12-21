@@ -270,7 +270,7 @@ type AccountPositionsResp []struct {
 		Type            string  `json:"type"`
 		Currency        string  `json:"currency"`
 		MainMarketPrice float64 `json:"mainMarketPrice,string"`
-	} `json:"instrumentID"`
+	} `json:"instrument"`
 }
 
 func (c *APIClient) AccountPositions(accountId string) (*AccountPositionsResp, error) {

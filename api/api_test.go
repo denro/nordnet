@@ -228,11 +228,11 @@ var accountPositionsJSON = `[
 		"qty":"9.0",
 		"marketValue":"642.6",
 		"marketValueAcc":"642.6",
-		"instrumentID":{
+		"instrument":{
 			"mainMarketId":"11",
 			"identifier":"101",
 			"type":"A",
-			"currecy": "SEK",
+			"currency": "SEK",
 			"mainMarketPrice":"55"
 		}
 	}
