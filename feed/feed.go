@@ -8,10 +8,10 @@ import (
 )
 
 type FeedMsg struct {
-	Cmd  string      `json:"cmd"`
-	Type string      `json:"type"`
-	Args interface{} `json:"args"`
-	Data interface{} `json:"data"`
+	Cmd  string      `json:"cmd,omitempty"`
+	Type string      `json:"type,omitempty"`
+	Args interface{} `json:"args,omitempty"`
+	Data interface{} `json:"data,omitempty"`
 }
 
 type FeedArgs struct {
