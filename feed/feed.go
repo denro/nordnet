@@ -3,11 +3,21 @@ package feed
 import (
 	"crypto/tls"
 	"encoding/json"
+	"io"
+	"log"
 )
 
-type FeedCmd struct {
+type FeedMsg struct {
 	Cmd  string      `json:"cmd"`
+	Type string      `json:"type"`
 	Args interface{} `json:"args"`
+	Data interface{} `json:"data"`
+}
+
+type FeedArgs struct {
+	T string `json:"t"`
+	M int64  `json:"m"`
+	I string `json:"i"`
 }
 
 type Feed struct {
@@ -15,30 +25,51 @@ type Feed struct {
 	Conn                *tls.Conn
 }
 
-func newFeed(address, service, sessionKey string) (*Feed, error) {
-	if conn, err := tls.Dial("tcp", address, nil); err != nil {
+func NewFeed(address, service, sessionKey string) (*Feed, error) {
+	conn, err := tls.Dial("tcp", address, nil)
+	if err != nil {
 		return nil, err
-	} else {
-		f := &Feed{Service: service, SessionKey: sessionKey, Conn: conn}
-		return f, nil
 	}
+
+	return &Feed{service, sessionKey, conn}, nil
 }
 
-func (f *Feed) WriteJSON(jsonDoc interface{}) error {
-	if jsonData, err := json.Marshal(jsonDoc); err != nil {
-		return err
-	} else {
-		_, err = f.Conn.Write(append(jsonData, '\n'))
+func (f *Feed) Write(any interface{}) error {
+	json, err := json.Marshal(any)
+	if err != nil {
 		return err
 	}
+
+	_, err = f.Conn.Write(append(json, '\n'))
+	return err
 }
 
 func (f *Feed) Login() error {
-	authData := &map[string]string{"session_key": f.SessionKey, "service": f.Service}
-	loginCmd := &FeedCmd{"login", authData}
-	return f.WriteJSON(loginCmd)
+	authArgs := &map[string]string{"session_key": f.SessionKey, "service": f.Service}
+	loginCmd := &FeedMsg{Cmd: "login", Args: authArgs}
+	return f.Write(loginCmd)
 }
 
 func (f *Feed) Close() error {
 	return f.Conn.Close()
+}
+
+func (f *Feed) DispatchListener(feedChan chan<- *FeedMsg) {
+	go listenOn(f.Conn, feedChan)
+}
+
+func listenOn(reader io.Reader, feedChan chan<- *FeedMsg) {
+	dec := json.NewDecoder(reader)
+
+	for {
+		feedData := &FeedMsg{}
+
+		if err := dec.Decode(feedData); err != nil {
+			log.Println(err)
+			close(feedChan)
+			break
+		}
+
+		feedChan <- feedData
+	}
 }
