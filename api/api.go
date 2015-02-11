@@ -1,3 +1,8 @@
+/*
+	Package api includes the HTTP client used to access the REST JSON API.
+
+	Information about specific endpoints and their parameters can be found at: https://api.test.nordnet.se/api-docs/index.html
+*/
 package api
 
 import (
@@ -13,19 +18,22 @@ import (
 const (
 	NNBASEURL    = `https://api.nordnet.se/next`
 	NNSERVICE    = `NEXTAPI`
-	NNAPIVERSION = `1`
+	NNAPIVERSION = `2`
 )
 
+// Represents the options available for various methods.
 type Params map[string]string
 
+// APIClient provides all API-endpoints available as methods.
 type APIClient struct {
 	URL, Service, Version, Credentials, SessionKey string
 	ExpiresAt, LastUsageAt                         time.Time
 
 	http.Client
-	sync.Mutex
+	sync.RWMutex
 }
 
+// Constructor function takes the credentials string produced by the util package.
 func NewAPIClient(credentials string) *APIClient {
 	return &APIClient{
 		URL:         NNBASEURL,
@@ -35,24 +43,7 @@ func NewAPIClient(credentials string) *APIClient {
 	}
 }
 
-func NewAPIClientwLogin(cred string) *APIClient {
-	client := make(chan *APIClient)
-	go func(c *APIClient) {
-		c.Login()
-		client <- c
-	}(NewAPIClient(cred))
-
-	return <-client
-}
-
-type SystemStatusResp struct {
-	Timestamp     int64  `json:"timestamp"`
-	ValidVersion  bool   `json:"valid_version"`
-	SystemRunnnig bool   `json:"system_running"`
-	SkipPhrase    bool   `json:"skip_phrase"`
-	Message       string `json:"message"`
-}
-
+// Information about the system status can be retrieved by this HTTP request. This is the only service that can be called without authentication.
 func (c *APIClient) SystemStatus() (*SystemStatusResp, error) {
 	res := &SystemStatusResp{}
 
@@ -63,26 +54,344 @@ func (c *APIClient) SystemStatus() (*SystemStatusResp, error) {
 	return res, nil
 }
 
-type feed struct {
-	Port      int64  `json:"port"`
-	Hostname  string `json:"hostname"`
-	Encrypted bool   `json:"encrypted"`
+// Returns a list of accounts that the user has access to.
+func (c *APIClient) Accounts() (*AccountsResp, error) {
+	res := &AccountsResp{}
+
+	if err := c.Perform("GET", "accounts", nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
-type LoginResp struct {
-	SessionKey  string `json:"session_key"`
-	Environment string `json:"environment"`
-	ExpiresIn   int64  `json:"expires_in"`
-	PublicFeed  feed   `json:"public_feed"`
-	PrivateFeed feed   `json:"private_feed"`
+// The account summary gives details of the account.
+func (c *APIClient) Account(accountno int64) (*AccountResp, error) {
+	res := &AccountResp{}
+
+	path := fmt.Sprintf("accounts/%d", accountno)
+	if err := c.Perform("GET", path, nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
+// Information about the currency ledgers of an account.
+func (c *APIClient) AccountLedgers(accountno int64) (*AccountLedgersResp, error) {
+	res := &AccountLedgersResp{}
+
+	path := fmt.Sprintf("accounts/%d/ledgers", accountno)
+	if err := c.Perform("GET", path, nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Get all orders beloning to an account.
+func (c *APIClient) AccountOrders(accountno int64, params *Params) (*AccountOrdersResp, error) {
+	res := &AccountOrdersResp{}
+
+	path := fmt.Sprintf("accounts/%d/orders", accountno)
+	if err := c.Perform("GET", path, params, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Enter a new order, market_id + identifier is the identifier of the tradable.
+func (c *APIClient) CreateOrder(accountno int64, params *Params) (*OrderResp, error) {
+	res := &OrderResp{}
+
+	path := fmt.Sprintf("accounts/%d/orders", accountno)
+	if err := c.Perform("POST", path, params, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Activate an inactive order. Please note that it is not possible to deactivate an order. The order must be entered as inactive.
+func (c *APIClient) ActivateOrder(accountno int64, orderId int64) (*OrderResp, error) {
+	res := &OrderResp{}
+
+	path := fmt.Sprintf("accounts/%d/orders/%d/activate", accountno, orderId)
+	if err := c.Perform("PUT", path, nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Modify price and or volume on an order.
+func (c *APIClient) UpdateOrder(accountno int64, orderId int64, params *Params) (*OrderResp, error) {
+	res := &OrderResp{}
+
+	path := fmt.Sprintf("accounts/%d/orders/%d", accountno, orderId)
+	if err := c.Perform("PUT", path, params, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Delete an order.
+func (c *APIClient) DeleteOrder(accountno int64, orderId int64) (*OrderResp, error) {
+	res := &OrderResp{}
+
+	path := fmt.Sprintf("accounts/%d/orders/%d", accountno, orderId)
+	if err := c.Perform("DELETE", path, nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Returns a list of all positions of the account.
+func (c *APIClient) AccountPositions(accountno int64) (*AccountPositionsResp, error) {
+	res := &AccountPositionsResp{}
+
+	path := fmt.Sprintf("accounts/%d/positions", accountno)
+	if err := c.Perform("GET", path, nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Get all trades belonging to an account.
+func (c *APIClient) AccountTrades(accountno int64, params *Params) (*AccountTradesResp, error) {
+	res := &AccountTradesResp{}
+
+	path := fmt.Sprintf("accounts/%d/trades", accountno)
+	if err := c.Perform("GET", path, params, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Get a list of all countries in the system. Please note that trading is not available everywhere.
+func (c *APIClient) Countries() (*CountriesResp, error) {
+	res := &CountriesResp{}
+
+	if err := c.Perform("GET", "countries", nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Lookup one or more countries by country code. Multiple countries can be queried at the same time by comma separating the country codes.
+// TODO: Merge with Countries call above
+func (c *APIClient) LookupCountries(countries string) (*CountriesResp, error) {
+	res := &CountriesResp{}
+
+	path := fmt.Sprintf("countries/%s", countries)
+	if err := c.Perform("GET", path, nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Returns a list indicators that the user has access to.
+func (c *APIClient) Indicators() (*IndicatorsResp, error) {
+	res := &IndicatorsResp{}
+
+	if err := c.Perform("GET", "indicators", nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Returns info of one or more indicators.
+// TODO: Merge with Indicators call above
+func (c *APIClient) LookupIndicators(indicators string) (*IndicatorsResp, error) {
+	res := &IndicatorsResp{}
+
+	path := fmt.Sprintf("indicators/%s", indicators)
+	if err := c.Perform("GET", path, nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Free text search. A list of instruments is returned.
+func (c *APIClient) SearchInstruments(params *Params) (*InstrumentsResp, error) {
+	res := &InstrumentsResp{}
+
+	if err := c.Perform("GET", "instruments", params, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Get one or more instruments, the instrument id is used as key
+func (c *APIClient) Instruments(ids string) (*InstrumentsResp, error) {
+	res := &InstrumentsResp{}
+
+	path := fmt.Sprintf("instruments/%s", ids)
+	if err := c.Perform("GET", path, nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Returns a list of leverage instruments that have the current instrument as underlying. Leverage instruments is for example warrants and ETF:s. To get all valid filters for the current underlying please use "Get leverages filters". The filters can be used to narrow the search. If "Get leverages filters" is used to fill comboboxes the same filters can be applied on the that call to hide filter cominations that are not valid. Multiple filters can be applied.
+func (c *APIClient) InstrumentLeverages(id int64, params *Params) (*InstrumentsResp, error) {
+	res := &InstrumentsResp{}
+
+	path := fmt.Sprintf("instruments/%d/leverages", id)
+	if err := c.Perform("GET", path, params, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Returns valid filter values. Can be used to fill comboboxes in clients to filter leverages results. The same filters can be applied on this request to exclude invalid filter combinations.
+func (c *APIClient) InstrumentLeverageFilters(id int64, params *Params) (*InstrumentLeverageFilterResp, error) {
+	res := &InstrumentLeverageFilterResp{}
+
+	path := fmt.Sprintf("instruments/%d/leverages/filters", id)
+	if err := c.Perform("GET", path, params, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Returns a list of call/put option pairs. They are balanced on strike price. In order to find underlyings with options use "Get underlyings". To get available expiration dates use "Get option pair filters".
+func (c *APIClient) InstrumentOptionPairs(id int64, params *Params) (*InstrumentOptionPairsResp, error) {
+	res := &InstrumentOptionPairsResp{}
+
+	path := fmt.Sprintf("instruments/%d/option_pairs", id)
+	if err := c.Perform("GET", path, params, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Returns valid filter values. Can be used to fill comboboxes in clients to filter options pair results. The same filters can be applied on this request to exclude invalid filter combinations.
+func (c *APIClient) InstrumentOptionPairFilters(id int64, params *Params) (*InstrumentOptionPairFiltersResp, error) {
+	res := &InstrumentOptionPairFiltersResp{}
+
+	path := fmt.Sprintf("instruments/%d/option_pairs/filters", id)
+	if err := c.Perform("GET", path, params, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Lookup specfic instrument with prededfined fields. Please note that this is not a search, only exact matches is returned.
+func (c *APIClient) InstrumentLookup(lookupType string, lookup string) (*InstrumentsResp, error) {
+	res := &InstrumentsResp{}
+
+	path := fmt.Sprintf("instruments/lookup/%s/%s", lookupType, lookup)
+	if err := c.Perform("GET", path, nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Get all instrument sectors or the ones matching the group crtieria
+func (c *APIClient) InstrumentSectors(params *Params) (*InstrumentSectorsResp, error) {
+	res := &InstrumentSectorsResp{}
+
+	if err := c.Perform("GET", "instruments/sectors", params, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Get one or more sectors
+func (c *APIClient) InstrumentSector(sectors string) (*InstrumentSectorsResp, error) {
+	res := &InstrumentSectorsResp{}
+
+	path := fmt.Sprintf("instruments/sectors/%s", sectors)
+	if err := c.Perform("GET", path, nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Get all instrument types. Please note that these types is used for both instrument_type and instrument_group_type.
+func (c *APIClient) InstrumentTypes() (*InstrumentTypesResp, error) {
+	res := &InstrumentTypesResp{}
+
+	if err := c.Perform("GET", "instruments/types", nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Get info of one orde more instrument type.
+func (c *APIClient) InstrumentType(instrumentType string) (*InstrumentTypesResp, error) {
+	res := &InstrumentTypesResp{}
+
+	path := fmt.Sprintf("instruments/types/%s", instrumentType)
+	if err := c.Perform("GET", path, nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Get instruments that are underlyings for a specific type of instruments. The query can return instrument that have option derivatives or leverage derivatives. Warrants are included in the leverage derivatives.
+func (c *APIClient) InstrumentUnderlyings(derivateType string, currency string) (*InstrumentsResp, error) {
+	res := &InstrumentsResp{}
+
+	path := fmt.Sprintf("instruments/underlyings/%s/%s", derivateType, currency)
+	if err := c.Perform("GET", path, nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Get all instrument lists
+func (c *APIClient) Lists() (*ListsResp, error) {
+	res := &ListsResp{}
+
+	if err := c.Perform("GET", "lists", nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Get all instruments in a list.
+func (c *APIClient) List(id int64) (*InstrumentsResp, error) {
+	res := &InstrumentsResp{}
+
+	path := fmt.Sprintf("lists/%d", id)
+	if err := c.Perform("GET", path, nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Before any other of the services (except for the system info request) can be called the user must login. The username, password and phrase must be sent encrypted.
 func (c *APIClient) Login() (*LoginResp, error) {
 	res := &LoginResp{}
 
-	c.Lock()
+	c.RLock()
 	params := &Params{"auth": c.Credentials, "service": c.Service}
-	c.Unlock()
+	c.RUnlock()
 
 	if err := c.Perform("POST", "login", params, res); err != nil {
 		return nil, err
@@ -95,65 +404,77 @@ func (c *APIClient) Login() (*LoginResp, error) {
 	return res, nil
 }
 
-type LogoutResp struct {
-	LoggedIn bool `json:"logged_in"`
-}
-
+// Invalidates the session.
 func (c *APIClient) Logout() (*LogoutResp, error) {
 	res := &LogoutResp{}
 
-	c.Lock()
-	path := fmt.Sprintf("login/%s", c.SessionKey)
-	c.Unlock()
-
-	if err := c.Perform("DELETE", path, nil, res); err != nil {
+	if err := c.Perform("DELETE", "login", nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-type TouchResp struct {
-	LoggedIn bool `json:"logged_in"`
-}
+// If the application needs to keep the session alive the session can be touched. Note the basic auth header field must be set as for all other calls. All calls to any REST service is touching the session. So touching the session manually is only needed if no other calls are done during the session timeout interval.
 
 func (c *APIClient) Touch() (*TouchResp, error) {
 	res := &TouchResp{}
 
-	c.Lock()
-	path := fmt.Sprintf("login/%s", c.SessionKey)
-	c.Unlock()
-
-	if err := c.Perform("PUT", path, nil, res); err != nil {
+	if err := c.Perform("PUT", "login", nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-type RealtimeAccessResp []struct {
-	MarketId string `json:"marketID"`
-	Level    int64  `json:"level"`
-}
+//Get all tradable markets. Market 80 is the smart order market. Instruments that can be traded on 2 or more markets gets a tradable on the smart order market. Orders entered with the smart order tradable get smart order routed with the current Nordnet best execution policy.
+func (c *APIClient) Markets() (*MarketsResp, error) {
+	res := &MarketsResp{}
 
-func (c *APIClient) RealtimeAccess() (*RealtimeAccessResp, error) {
-	res := &RealtimeAccessResp{}
-
-	if err := c.Perform("GET", "realtime_access", nil, res); err != nil {
+	if err := c.Perform("GET", "markets", nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-type NewsSourcesResp []struct {
-	Name     string `json:"name"`
-	Code     string `json:"code"`
-	Level    string `json:"level"`
-	SourceId int64  `json:"sourceid"`
-	ImageURL string `json:"imageurl"`
+// Lookup one or more markets by market_id. Multiple market can be queried at the same time by comma separating the market_ids. Market 80 is the smart order market. Instruments that can be traded on 2 or more markets gets a tradable on the smart order market. Orders entered with the smart order tradable get smart order routed with the current Nordnet best execution policy.
+func (c *APIClient) Market(ids string) (*MarketsResp, error) {
+	res := &MarketsResp{}
+
+	path := fmt.Sprintf("markets/%s", ids)
+	if err := c.Perform("GET", path, nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
+// Search for news. If no search field is used the last news available to the user is returned.
+func (c *APIClient) SearchNews(params *Params) (*NewsResp, error) {
+	res := &NewsResp{}
+
+	if err := c.Perform("GET", "news", params, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Show one or more news items.
+// Search for news. If no search field is used the last news available to the user is returned.
+func (c *APIClient) News(ids string) (*NewsItemsResp, error) {
+	res := &NewsItemsResp{}
+
+	path := fmt.Sprintf("news/%s", ids)
+	if err := c.Perform("GET", path, nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Returns a list of news sources the user has access to
 func (c *APIClient) NewsSources() (*NewsSourcesResp, error) {
 	res := &NewsSourcesResp{}
 
@@ -164,39 +485,33 @@ func (c *APIClient) NewsSources() (*NewsSourcesResp, error) {
 	return res, nil
 }
 
-type NewsItemsResp []struct {
-	DateTime string `json:"datetime"`
-	Headline string `json:"headline"`
-	ItemId   int64  `json:"itemid"`
-	SourceId int64  `json:"sourceid"`
-	Type     string `json:"type"`
-}
+// Get realtime data access. This applies to the access on the feeds. If the market is missing the user don't have realtime access on that market.
+func (c *APIClient) RealtimeAccess() (*RealtimeAccessResp, error) {
+	res := &RealtimeAccessResp{}
 
-func (c *APIClient) NewsItems(params *Params) (*NewsItemsResp, error) {
-	res := &NewsItemsResp{}
-
-	if err := c.Perform("GET", "news_items", params, res); err != nil {
+	if err := c.Perform("GET", "realtime_access", nil, res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-type NewsItemResp struct {
-	DateTime string `json:"datetime"`
-	Body     string `json:"body"`
-	Headline string `json:"headline"`
-	ItemId   int64  `json:"itemid"`
-	Lang     string `json:"lang"`
-	Preamble string `json:"preamble"`
-	SourceId int64  `json:"sourceid"`
-	Type     string `json:"type"`
+// Get all ticksize tables.
+func (c *APIClient) TickSizes() (*TickSizesResp, error) {
+	res := &TickSizesResp{}
+
+	if err := c.Perform("GET", "tick_sizes", nil, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
-func (c *APIClient) NewsItem(newsItemId int64) (*NewsItemResp, error) {
-	res := &NewsItemResp{}
+// Get one or more ticksize tables.
+func (c *APIClient) TickSize(ids string) (*TickSizesResp, error) {
+	res := &TickSizesResp{}
 
-	path := fmt.Sprintf("news_items/%d", newsItemId)
+	path := fmt.Sprintf("tick_sizes/%s", ids)
 	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
@@ -204,32 +519,11 @@ func (c *APIClient) NewsItem(newsItemId int64) (*NewsItemResp, error) {
 	return res, nil
 }
 
-type AccountsResp []struct {
-	Id      string `json:"id"`
-	Default bool   `json:"default"`
-}
+// Get trading calender and allowed trading types for one or more tradable.
+func (c *APIClient) TradableInfo(ids string) (*TradableInfoResp, error) {
+	res := &TradableInfoResp{}
 
-func (c *APIClient) Accounts() (*AccountsResp, error) {
-	res := &AccountsResp{}
-
-	if err := c.Perform("GET", "accounts", nil, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-type AccountResp struct {
-	AccountSum      float64 `json:"accountSum,string"`
-	FullMarketValue float64 `json:"fullMarketvalue,string"`
-	TradingPower    float64 `json:"tradingPower,string"`
-	AccountCurrency string  `json:"accountCurrency"`
-}
-
-func (c *APIClient) Account(accountId string) (*AccountResp, error) {
-	res := &AccountResp{}
-
-	path := fmt.Sprintf("accounts/%s", accountId)
+	path := fmt.Sprintf("tradables/info/%s", ids)
 	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
@@ -237,18 +531,11 @@ func (c *APIClient) Account(accountId string) (*AccountResp, error) {
 	return res, nil
 }
 
-type AccountLedgersResp []struct {
-	Currency      string  `json:"currency"`
-	AccountSum    float64 `json:"accountSum,string"`
-	AccountSumAcc float64 `json:"accountSumAcc,string"`
-	AccIntCred    float64 `json:"accIntCred,string"`
-	AccIntDeb     float64 `json:"accIntDeb,string"`
-}
+// Can be used for populating instrument price graphs for today. Resolution is one minute.
+func (c *APIClient) TradableIntraday(ids string) (*TradableIntradayResp, error) {
+	res := &TradableIntradayResp{}
 
-func (c *APIClient) AccountLedgers(accountId string) (*AccountLedgersResp, error) {
-	res := &AccountLedgersResp{}
-
-	path := fmt.Sprintf("accounts/%s/ledgers", accountId)
+	path := fmt.Sprintf("tradables/intraday/%s", ids)
 	if err := c.Perform("GET", path, nil, res); err != nil {
 		return nil, err
 	}
@@ -256,391 +543,12 @@ func (c *APIClient) AccountLedgers(accountId string) (*AccountLedgersResp, error
 	return res, nil
 }
 
-type AccountPositionsResp []struct {
-	AcqPrice       float64 `json:"acqPrice,string"`
-	AcqPriceAcc    float64 `json:"acqPriceAcc,string"`
-	PawnPercent    float64 `json:"pawnPercent,string"`
-	Qty            float64 `json:"qty,string"`
-	MarketValue    float64 `json:"marketValue,string"`
-	MarketValueAcc float64 `json:"marketValueAcc,string"`
+// Get all public trades (all trades done on the marketplace) beloning to one ore more tradable.
+func (c *APIClient) TradableTrades(ids string) (*TradableTradesResp, error) {
+	res := &TradableTradesResp{}
 
-	Instrument struct {
-		MainMarketId    int64   `json:"mainMarketId,string"`
-		Identifier      string  `json:"identifier"`
-		Type            string  `json:"type"`
-		Currency        string  `json:"currency"`
-		MainMarketPrice float64 `json:"mainMarketPrice,string"`
-	} `json:"instrument"`
-}
-
-func (c *APIClient) AccountPositions(accountId string) (*AccountPositionsResp, error) {
-	res := &AccountPositionsResp{}
-
-	path := fmt.Sprintf("accounts/%s/positions", accountId)
+	path := fmt.Sprintf("tradables/trades/%s", ids)
 	if err := c.Perform("GET", path, nil, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-type AccountOrdersResp []struct {
-	ExchangeOrderId string `json:"exchangeOrderID"`
-	OrderId         int64  `json:"orderID"`
-
-	ActivationCondition struct {
-		Type string `json:"type"`
-		Date string `json:"date"`
-
-		Price struct {
-			Value float64 `json:"value"`
-			Curr  string  `json:"curr"`
-		} `json:"price"`
-	} `json:"activationCondition"`
-
-	RegDate        int64  `json:"regdate"`
-	PriceCondition string `json:"priceCondition"`
-
-	Price struct {
-		Value float64 `json:"value"`
-		Curr  string  `json:"curr"`
-	} `json:"price"`
-
-	VolumeCondition string  `json:"volumeCondition"`
-	Volume          float64 `json:"volume"`
-	Side            string  `json:"side"`
-	TradedVolume    float64 `json:"tradedVolume"`
-	Accno           int64   `json:"accno"`
-
-	InstrumentId struct {
-		MarketId   int64  `json:"marketID"`
-		Identifier string `json:"identifier"`
-	} `json:"instrumentID"`
-
-	Validity struct {
-		Type string `json:"type"`
-		Date string `json:"date"`
-	} `json:"validity"`
-
-	OrderState string `json:"orderState"`
-	StatusText string `json:"statusText"`
-}
-
-func (c *APIClient) AccountOrders(accountId string) (*AccountOrdersResp, error) {
-	res := &AccountOrdersResp{}
-
-	path := fmt.Sprintf("accounts/%s/orders", accountId)
-	if err := c.Perform("GET", path, nil, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-type AccountTradesResp []struct {
-	SecurityTrade struct {
-		Accno   string `json:"accno"`
-		OrderId int64  `json:"orderID,string"`
-
-		InstrumentId struct {
-			MarketId   int64  `json:"marketID,string"`
-			Identifier string `json:"identifier"`
-		} `json:"instrumentID"`
-
-		Volume    float64 `json:"volume,string"`
-		TradeTime string  `json:"tradetime"`
-
-		Price struct {
-			Value float64 `json:"value,string"`
-			Curr  string  `json:"curr"`
-		} `json:"price"`
-
-		Side    string `json:"side"`
-		TradeId string `json:"tradeID"`
-	} `json:"securityTrade"`
-}
-
-func (c *APIClient) AccountTrades(accountId string) (*AccountTradesResp, error) {
-	res := &AccountTradesResp{}
-
-	path := fmt.Sprintf("accounts/%s/trades", accountId)
-	if err := c.Perform("GET", path, nil, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-type InstrumentsResp []struct {
-	Type       string `json:"type"`
-	LongName   string `json:"longname"`
-	ShortName  string `json:"shortname"`
-	MarketId   int64  `json:"marketID,string"`
-	MarketName string `json:"marketname"`
-	Country    string `json:"country"`
-	IsInCode   string `json:"isinCode"`
-	Identifier string `json:"identifier"`
-	Currency   string `json:"currency"`
-}
-
-func (c *APIClient) Instruments(params *Params) (*InstrumentsResp, error) {
-	res := &InstrumentsResp{}
-
-	if err := c.Perform("GET", "instruments", params, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-type InstrumentResp struct {
-	Type       string `json:"type"`
-	LongName   string `json:"longname"`
-	ShortName  string `json:"shortname"`
-	MarketId   int64  `json:"marketID,string"`
-	MarketName string `json:"marketname"`
-	Country    string `json:"country"`
-	IsInCode   string `json:"isinCode"`
-	Identifier string `json:"identifier"`
-	Currency   string `json:"currency"`
-}
-
-func (c *APIClient) Instrument(params *Params) (*InstrumentResp, error) {
-	res := &InstrumentResp{}
-
-	if err := c.Perform("GET", "instruments", params, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-type ChartDataResp []struct {
-	Timestamp string  `json:"timestamp"`
-	Change    float64 `json:"change"`
-	Volume    int64   `json:"volume"`
-	Price     float64 `json:"price"`
-}
-
-func (c *APIClient) ChartData(params *Params) (*ChartDataResp, error) {
-	res := &ChartDataResp{}
-
-	if err := c.Perform("GET", "chart_data", params, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-type ListsResp []struct {
-	Id      string `json:"id"`
-	Name    string `json:"name"`
-	Country string `json:"country"`
-}
-
-func (c *APIClient) Lists() (*ListsResp, error) {
-	res := &ListsResp{}
-
-	if err := c.Perform("GET", "lists", nil, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-type ListResp []struct {
-	ShortName  string `json:"shortname"`
-	MarketId   int64  `json:"marketID,string"`
-	Identifier string `json:"identifier"`
-}
-
-func (c *APIClient) List(listId int64) (*ListResp, error) {
-	res := &ListResp{}
-
-	path := fmt.Sprintf("lists/%d", listId)
-	if err := c.Perform("GET", path, nil, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-type MarketsReps []struct {
-	Name       string `json:"name"`
-	Country    string `json:"country"`
-	MarketId   int64  `json:"marketID,string"`
-	OrderTypes []struct {
-		Text string `json:"text"`
-		Type string `json:"type"`
-	} `json:"ordertypes"`
-}
-
-func (c *APIClient) Markets() (*MarketsReps, error) {
-	res := &MarketsReps{}
-
-	if err := c.Perform("GET", "markets", nil, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-type MarketTradingDaysResp []struct {
-	Date        string `json:"date"`
-	DisplayDate string `json:"display_date"`
-}
-
-func (c *APIClient) MarketTradingDays(marketId int64) (*MarketTradingDaysResp, error) {
-	res := &MarketTradingDaysResp{}
-
-	path := fmt.Sprintf("markets/%d/trading_days", marketId)
-	if err := c.Perform("GET", path, nil, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-type IndicesResp []struct {
-	Type     string `json:"type"`
-	LongName string `json:"longname"`
-	Source   string `json:"source"`
-	Country  string `json:"country"`
-	ImageURL string `json:"imageurl"`
-	Id       string `json:"id"`
-}
-
-func (c *APIClient) Indices() (*IndicesResp, error) {
-	res := &IndicesResp{}
-
-	if err := c.Perform("GET", "indices", nil, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-type TicksizesResp []struct {
-	Tick     float64 `json:"tick"`
-	Above    float64 `json:"above"`
-	Decimals int64   `json:"decimals"`
-}
-
-func (c *APIClient) Ticksizes(ticksizeId int64) (*TicksizesResp, error) {
-	res := &TicksizesResp{}
-
-	path := fmt.Sprintf("ticksizes/%d", ticksizeId)
-	if err := c.Perform("GET", path, nil, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-type DerivateCountriesResp []string
-
-func (c *APIClient) DerivateCountries(derType string) (*DerivateCountriesResp, error) {
-	res := &DerivateCountriesResp{}
-
-	path := fmt.Sprintf("derivatives/%s", derType)
-	if err := c.Perform("GET", path, nil, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-type DerivateUnderlyingsResp []struct {
-	ShortName  string `json:"shortname"`
-	MarketId   int64  `json:"marketID,string"`
-	Identifier string `json:"identifier"`
-}
-
-func (c *APIClient) DerivateUnderlyings(derType, country string) (*DerivateUnderlyingsResp, error) {
-	res := &DerivateUnderlyingsResp{}
-
-	path := fmt.Sprintf("derivatives/%s/underlyings/%s", derType, country)
-	if err := c.Perform("GET", path, nil, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-type Derivatives []struct {
-	ShortName   string  `json:"shortname"`
-	Multipier   int64   `json:"multiplier,string"`
-	StrikePrice float64 `json:"strikeprice,string"`
-	MarketId    int64   `json:"marketID,string"`
-	Identifier  string  `json:"identifier"`
-	ExpiryDate  string  `json:"expirydate"`
-	ExpiryType  string  `json:"expirytype"`
-	Kind        string  `json:"kind"`
-	Currency    string  `json:"currency"`
-	CallPut     string  `json:"callPut"`
-}
-
-func (c *APIClient) Derivatives(derType string, params *Params) (*Derivatives, error) {
-	res := &Derivatives{}
-
-	path := fmt.Sprintf("derivatives/%s/derivatives", derType)
-	if err := c.Perform("GET", path, nil, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-type RelatedMarketsResp []struct {
-	MarketId   int64  `json:"marketID"`
-	Identifier string `json:"identifier"`
-}
-
-func (c *APIClient) RelatedMarkets(params *Params) (*RelatedMarketsResp, error) {
-	res := &RelatedMarketsResp{}
-
-	if err := c.Perform("GET", "related_markets", params, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-type OrderResp struct {
-	OrderId     int64  `json:"orderID"`
-	ResultCode  string `json:"resultCode"`
-	OrderState  string `json:"orderState"`
-	AccNo       int64  `json:"accNo"`
-	ActionState string `json:"actionState"`
-}
-
-func (c *APIClient) CreateOrder(accountId string, params *Params) (*OrderResp, error) {
-	res := &OrderResp{}
-
-	path := fmt.Sprintf("accounts/%s/orders", accountId)
-	if err := c.Perform("POST", path, params, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-func (c *APIClient) UpdateOrder(accountId string, orderId int64, params *Params) (*OrderResp, error) {
-	res := &OrderResp{}
-
-	path := fmt.Sprintf("accounts/%s/orders/%d", accountId, orderId)
-	if err := c.Perform("PUT", path, params, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-func (c *APIClient) DeleteOrder(accountId string, orderId int64) (*OrderResp, error) {
-	res := &OrderResp{}
-
-	path := fmt.Sprintf("accounts/%s/orders/%d", accountId, orderId)
-	if err := c.Perform("DELETE", path, nil, res); err != nil {
 		return nil, err
 	}
 
@@ -671,11 +579,11 @@ func (c *APIClient) perform(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Accept-Language", "en")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	c.Lock()
+	c.RLock()
 	if c.SessionKey != "" {
 		req.SetBasicAuth(c.SessionKey, c.SessionKey)
 	}
-	c.Unlock()
+	c.RUnlock()
 
 	if resp, err := c.Do(req); err != nil {
 		return nil, err
@@ -689,14 +597,14 @@ func (c *APIClient) perform(req *http.Request) (*http.Response, error) {
 }
 
 func (c *APIClient) formatURL(path string, params *Params) (*url.URL, error) {
-	var absURL string
-	c.Lock()
+	c.RLock()
 	baseURL := fmt.Sprintf("%s/%s", c.URL, c.Version)
+	c.RUnlock()
+
 	if path != "" {
 		baseURL += "/"
 	}
-	absURL = baseURL + path
-	c.Unlock()
+	absURL := baseURL + path
 
 	if reqURL, err := url.Parse(absURL); err != nil {
 		return nil, err

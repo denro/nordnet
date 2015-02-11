@@ -1,75 +1,115 @@
+// Contains everything related to the public and private feeds
 package feed
 
 import (
 	"crypto/tls"
 	"encoding/json"
 	"io"
-	"log"
 )
 
-type FeedMsg struct {
-	Cmd  string      `json:"cmd,omitempty"`
-	Type string      `json:"type,omitempty"`
-	Args interface{} `json:"args,omitempty"`
-	Data interface{} `json:"data,omitempty"`
+// Used in the UnmarshalJSON implementations on PrivateFeed and PublicFeed
+var (
+	heartbeatType     = "heartbeat"
+	orderType         = "order"
+	tradeType         = "trade"
+	priceType         = "price"
+	depthType         = "depth"
+	tradingStatusType = "trading_status"
+	indicatorType     = "indicator"
+	newsType          = "news"
+)
+
+// Used when sending feed commands
+type FeedCmd struct {
+	Cmd  string      `json:"cmd"`
+	Args interface{} `json:"args"`
 }
 
-type FeedArgs struct {
+// Arguments for sending the login command
+type LoginArgs struct {
+	SessionKey string      `json:"session_key"`
+	GetState   interface{} `json:"get_state,omitempty"`
+}
+
+// Arguments for getting orders and trades when logging in
+type GetState struct {
+	DeletedOrders bool  `json:"deleted_orders"`
+	Days          int64 `json:"days,omitempty"`
+}
+
+// Arguments for subscribing to price updates
+type PriceArgs feedCmdArgs
+
+// Arguments for subscribing to depth updates
+type DepthArgs feedCmdArgs
+
+// Arguments for subscribing to trade updates
+type TradeArgs feedCmdArgs
+
+// Arguments for subscribing to trading status updates
+type TradingStatusArgs feedCmdArgs
+
+type feedCmdArgs struct {
 	T string `json:"t"`
-	M int64  `json:"m"`
 	I string `json:"i"`
+	M int64  `json:"m"`
 }
 
+// Arguments for subscribing to indicator updates
+type IndicatorArgs struct {
+	T string `json:"t"`
+	I string `json:"i"`
+	M string `json:"m"`
+}
+
+// Arguments for subscribing to news updates
+type NewsArgs struct {
+	T     string `json:"t"`
+	S     int64  `json:"s"`
+	Delay bool   `json:"delay,omitempty"`
+}
+
+// Used for receiving messages
+type FeedMsg struct {
+	Type string      `json:"type"`
+	Data interface{} `json:"data"`
+}
+
+// Used in UnmarshalJSON overrides
+type rawMsg struct {
+	Type string          `json:"type"`
+	Data json.RawMessage `json:"data"`
+}
+
+// Represents the feed connection
 type Feed struct {
-	Service, SessionKey string
-	Conn                *tls.Conn
+	conn    io.ReadWriteCloser
+	encoder *json.Encoder
+	decoder *json.Decoder
 }
 
-func NewFeed(address, service, sessionKey string) (*Feed, error) {
-	conn, err := tls.Dial("tcp", address, nil)
+// Returns a new Feed connected to the address specified
+func NewFeed(address string, conf *tls.Config) (*Feed, error) {
+	conn, err := tls.Dial("tcp", address, conf)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Feed{service, sessionKey, conn}, nil
+	return &Feed{conn, json.NewEncoder(conn), json.NewDecoder(conn)}, nil
 }
 
+// Feed implements the Writer interface
 func (f *Feed) Write(any interface{}) error {
-	json, err := json.Marshal(any)
-	if err != nil {
-		return err
-	}
-
-	_, err = f.Conn.Write(append(json, '\n'))
-	return err
+	return f.encoder.Encode(any)
 }
 
-func (f *Feed) Login() error {
-	authArgs := &map[string]string{"session_key": f.SessionKey, "service": f.Service}
-	loginCmd := &FeedMsg{Cmd: "login", Args: authArgs}
-	return f.Write(loginCmd)
-}
-
+// Feed implements the Closer interface
+// closes the underlying conneciton
 func (f *Feed) Close() error {
-	return f.Conn.Close()
+	return f.conn.Close()
 }
 
-func (f *Feed) DispatchListener(feedChan chan<- *FeedMsg) {
-	go listenOn(f.Conn, feedChan)
-}
-
-func listenOn(reader io.Reader, feedChan chan<- *FeedMsg) {
-	dec := json.NewDecoder(reader)
-
-	for {
-		feedData := &FeedMsg{}
-
-		if err := dec.Decode(feedData); err != nil {
-			log.Println(err)
-			close(feedChan)
-			break
-		}
-
-		feedChan <- feedData
-	}
+// Send the login command with the specified session key
+func (f *Feed) Login(session string, getState interface{}) error {
+	return f.Write(&FeedCmd{Cmd: "login", Args: &LoginArgs{SessionKey: session, GetState: getState}})
 }
