@@ -1,4 +1,4 @@
-// Package util contains shared models and utility functions
+// Package util contains utility functions
 package util
 
 import (

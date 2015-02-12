@@ -878,7 +878,7 @@ func TestTradableTradesIntegration(t *testing.T) {
 }
 
 // Assert Order type
-func assertOrder(assert *assert.Assertions, order *OrderResp) {
+func assertOrder(assert *assert.Assertions, order *OrderReply) {
 	assert.Equal(123, order.OrderID)
 	assert.Equal("test", order.ResultCode)
 	assert.Equal("test", order.OrderState)

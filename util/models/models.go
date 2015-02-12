@@ -1,3 +1,4 @@
+// Package models represents data returned by the API and in the private feed
 package models
 
 type SystemStatus struct {
