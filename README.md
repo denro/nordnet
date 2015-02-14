@@ -28,23 +28,23 @@ Util contains authentication.
 package main
 
 import (
-  "fmt"
+	"fmt"
 	"github.com/denro/nordnet/api"
 	"github.com/denro/nordnet/util"
 )
 
 var (
-	pemData = []byte(`-----BEGIN PUBLIC KEY-----`) 
-	user = []byte(`...`)
-	pass = []byte(`...`)
+	pemData = []byte(`-----BEGIN PUBLIC KEY-----`)
+	user    = []byte(`...`)
+	pass    = []byte(`...`)
 )
 
 func main() {
-  cred, _ := util.GenerateCredentials(user, pass, pemData)
-  client := api.NewAPIClient(cred)
-  client.Login()
+	cred, _ := util.GenerateCredentials(user, pass, pemData)
+	client := api.NewAPIClient(cred)
+	client.Login()
 
-  fmt.Println(client.Account())
+	fmt.Println(client.Account())
 }
 ```
 
@@ -54,24 +54,24 @@ func main() {
 package main
 
 import (
-  "fmt"
-  "github.com/denro/nordnet/feed"
+	"fmt"
+	"github.com/denro/nordnet/feed"
 )
 
 var (
-  sessionKey = "..."
-  address = "..."
+	sessionKey = "..."
+	address    = "..."
 )
 
 func main() {
-  feed, _ := feed.NewPrivateFeed(address)
-  feed.Login(sessionKey, nil)
+	feed, _ := feed.NewPrivateFeed(address)
+	feed.Login(sessionKey, nil)
 
-  msgChan, errChan := feed.Dispatch()
+	msgChan, errChan := feed.Dispatch()
 
-  for _, msg := range msgChan {
-    fmt.Println(msg)
-  }
+	for _, msg := range msgChan {
+		fmt.Println(msg)
+	}
 }
 ```
 
