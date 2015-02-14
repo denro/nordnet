@@ -13,6 +13,20 @@ import (
 
 var defSessionKey = "DEFAULTSESSION"
 
+func TestLoginErrorIntegration(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(401)
+		w.Write([]byte(`{"code":"NEXT_LOGIN_INVALID_TIMESTAMP","message":"Something went wrong when logging in."}`))
+	})
+	ts := httptest.NewServer(handler)
+	defer ts.Close()
+
+	client := APIClient{URL: ts.URL}
+	_, err := client.Login()
+
+	assert.EqualError(t, err, "NEXT_LOGIN_INVALID_TIMESTAMP: Something went wrong when logging in.")
+}
+
 func TestSystemStatusIntegration(t *testing.T) {
 	client, ts := setup(t, "GET", "/2", "", systemStatusJSON)
 	defer ts.Close()

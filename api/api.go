@@ -22,6 +22,17 @@ const (
 	NNAPIVERSION = `2`
 )
 
+// Error type for errors returned by the API
+type APIError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+// APIError implements the error interface
+func (e APIError) Error() string {
+	return fmt.Sprintf("%v: %v", e.Code, e.Message)
+}
+
 // Represents the options available for various methods.
 type Params map[string]string
 
@@ -359,26 +370,44 @@ func (c *APIClient) TradableTrades(ids string) (res *[]PublicTrades, err error) 
 	return
 }
 
-func (c *APIClient) Perform(method, path string, params *Params, res interface{}) error {
-	if reqURL, err := c.formatURL(path, params); err != nil {
-		return err
-	} else if req, err := http.NewRequest(method, reqURL.String(), nil); err != nil {
-		return err
-	} else if resp, err := c.perform(req); err != nil {
-		return err
-	} else {
-		defer resp.Body.Close()
-		if body, err := ioutil.ReadAll(resp.Body); err != nil {
-			return err
-		} else if err := json.Unmarshal(body, res); err != nil {
-			return err
-		}
+func (c *APIClient) Perform(method, path string, params *Params, res interface{}) (err error) {
+	reqURL, err := c.formatURL(path, params)
+	if err != nil {
+		return
 	}
 
-	return nil
+	req, err := http.NewRequest(method, reqURL.String(), nil)
+	if err != nil {
+		return
+	}
+
+	resp, err := c.perform(req)
+	defer resp.Body.Close()
+	if err != nil {
+		return
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	if resp.StatusCode != 200 {
+		errRes := APIError{}
+		if err = json.Unmarshal(body, &errRes); err != nil {
+			return
+		}
+		return errRes
+	}
+
+	if err = json.Unmarshal(body, res); err != nil {
+		return
+	}
+
+	return
 }
 
-func (c *APIClient) perform(req *http.Request) (*http.Response, error) {
+func (c *APIClient) perform(req *http.Request) (resp *http.Response, err error) {
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Accept-Language", "en")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -389,15 +418,13 @@ func (c *APIClient) perform(req *http.Request) (*http.Response, error) {
 	}
 	c.RUnlock()
 
-	if resp, err := c.Do(req); err != nil {
-		return nil, err
-	} else {
-		c.Lock()
-		c.LastUsageAt = time.Now()
-		c.Unlock()
+	resp, err = c.Do(req)
 
-		return resp, nil
-	}
+	c.Lock()
+	c.LastUsageAt = time.Now()
+	c.Unlock()
+
+	return
 }
 
 func (c *APIClient) formatURL(path string, params *Params) (*url.URL, error) {
