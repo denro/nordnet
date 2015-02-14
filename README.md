@@ -6,15 +6,15 @@ Nordnet nEXT API Client. Comes as three separate packages:
 
 The APIClient is used for making REST requests, such as making orders.
 
-  $ go get github.com/denro/go-nordnet/api
+  $ go get github.com/denro/nordnet/api
 
 The Feed package is for reading realtime prices and trades.
 
-  $ go get github.com/denro/go-nordnet/feed
+  $ go get github.com/denro/nordnet/feed
 
 Util contains authentication.
 
-  $ go get github.com/denro/go-nordnet/util
+  $ go get github.com/denro/nordnet/util
 
 
 ## Usage
@@ -23,9 +23,8 @@ Util contains authentication.
 package main
 
 import (
-	"github.com/denro/go-nordnet/api"
-	"github.com/denro/go-nordnet/util"
-	"log"
+	"github.com/denro/nordnet/api"
+	"github.com/denro/nordnet/util"
 )
 
 var (
@@ -36,8 +35,10 @@ var (
 
 func main() {
   cred, _ := util.GenerateCredentials(user, pass, pemData)
-  client := api.NewAPIClientwLogin(*cred)
-  log.Println(client.Accounts())
+  client := api.NewAPIClient(*cred)
+  client.Login()
+
+  fmt.Println(client.Account())
 }
 ```
 
