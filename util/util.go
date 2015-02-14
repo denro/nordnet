@@ -13,7 +13,8 @@ import (
 	"time"
 )
 
-func GenerateCredentials(username, password, rawPem []byte) (*string, error) {
+func GenerateCredentials(username, password, rawPem []byte) (cred string, err error) {
+	cred = ""
 	unixStr := strconv.FormatInt(time.Now().Unix(), 10)
 
 	userBase64 := base64.StdEncoding.EncodeToString(username)
@@ -24,24 +25,26 @@ func GenerateCredentials(username, password, rawPem []byte) (*string, error) {
 
 	block, _ := pem.Decode(rawPem)
 	if block == nil {
-		return nil, errors.New("Could not Decode PEM")
+		err = errors.New("Could not Decode PEM")
+		return
 	}
 
 	pubKeyVal, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	rsaPubKey, ok := pubKeyVal.(*rsa.PublicKey)
 	if !ok {
-		return nil, errors.New("Could not make DER to an RSA PublicKey")
+		err = errors.New("Could not make DER to an RSA PublicKey")
+		return
 	}
 
 	encr, err := rsa.EncryptPKCS1v15(rand.Reader, rsaPubKey, []byte(formated))
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	cred := base64.StdEncoding.EncodeToString(encr)
-	return &cred, nil
+	cred = base64.StdEncoding.EncodeToString(encr)
+	return
 }
