@@ -9,18 +9,12 @@ type PrivateFeed struct {
 	*Feed
 }
 
-func NewPrivateFeed(address, session string) (*PrivateFeed, error) {
-	f, err := NewFeed(address, nil)
+func NewPrivateFeed(address string) (*PrivateFeed, error) {
+	f, err := newFeed(address)
 	if err != nil {
 		return nil, err
 	}
-
-	privf := &PrivateFeed{Feed: f}
-	if err = privf.Login(session, nil); err != nil {
-		return nil, err
-	}
-
-	return privf, nil
+	return &PrivateFeed{f}, nil
 }
 
 // Order data section in the private message

@@ -8,18 +8,45 @@ type PublicFeed struct {
 	*Feed
 }
 
-func NewPublicFeed(address, session string) (*PublicFeed, error) {
-	f, err := NewFeed(address, nil)
+func NewPublicFeed(address string) (*PublicFeed, error) {
+	f, err := newFeed(address)
 	if err != nil {
 		return nil, err
 	}
 
-	pubf := &PublicFeed{Feed: f}
-	if err = pubf.Login(session, nil); err != nil {
-		return nil, err
-	}
+	return &PublicFeed{f}, err
+}
 
-	return pubf, nil
+// Arguments for subscribing to price updates
+type PriceArgs feedCmdArgs
+
+// Arguments for subscribing to depth updates
+type DepthArgs feedCmdArgs
+
+// Arguments for subscribing to trade updates
+type TradeArgs feedCmdArgs
+
+// Arguments for subscribing to trading status updates
+type TradingStatusArgs feedCmdArgs
+
+type feedCmdArgs struct {
+	T string `json:"t"`
+	I string `json:"i"`
+	M int64  `json:"m"`
+}
+
+// Arguments for subscribing to indicator updates
+type IndicatorArgs struct {
+	T string `json:"t"`
+	I string `json:"i"`
+	M string `json:"m"`
+}
+
+// Arguments for subscribing to news updates
+type NewsArgs struct {
+	T     string `json:"t"`
+	S     int64  `json:"s"`
+	Delay bool   `json:"delay,omitempty"`
 }
 
 // Sends the Subscribe command with the given args

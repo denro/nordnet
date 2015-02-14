@@ -275,3 +275,123 @@ func TestPublicFeedDispatch(t *testing.T) {
 		}
 	}
 }
+
+var subscribeTests = []struct {
+	args     interface{}
+	expected string
+}{
+	{
+		nil,
+		`{"cmd":"subscribe","args":null}`,
+	},
+	{
+		"test",
+		`{"cmd":"subscribe","args":"test"}`,
+	},
+	{
+		123,
+		`{"cmd":"subscribe","args":123}`,
+	},
+	{
+		map[string]interface{}{"some": "value"},
+		`{"cmd":"subscribe","args":{"some":"value"}}`,
+	},
+	{
+		PriceArgs{T: "price", I: "1869", M: 30},
+		`{"cmd":"subscribe","args":{"t":"price","i":"1869","m":30}}`,
+	},
+	{
+		DepthArgs{T: "depth", I: "1869", M: 30},
+		`{"cmd":"subscribe","args":{"t":"depth","i":"1869","m":30}}`,
+	},
+	{
+		TradeArgs{T: "trade", I: "1869", M: 30},
+		`{"cmd":"subscribe","args":{"t":"trade","i":"1869","m":30}}`,
+	},
+	{
+		TradingStatusArgs{T: "trading_status", I: "1869", M: 30},
+		`{"cmd":"subscribe","args":{"t":"trading_status","i":"1869","m":30}}`,
+	},
+	{
+		IndicatorArgs{T: "indicator", I: "SIX-IDX-DJI", M: "SIX"},
+		`{"cmd":"subscribe","args":{"t":"indicator","i":"SIX-IDX-DJI","m":"SIX"}}`,
+	},
+	{
+		NewsArgs{T: "news", S: 2, Delay: true},
+		`{"cmd":"subscribe","args":{"t":"news","s":2,"delay":true}}`,
+	},
+	{
+		NewsArgs{T: "news", S: 2},
+		`{"cmd":"subscribe","args":{"t":"news","s":2}}`,
+	},
+}
+
+func TestSubscribe(t *testing.T) {
+	b := &fakeConnection{&bytes.Buffer{}}
+	f := &Feed{b, json.NewEncoder(b), json.NewDecoder(b)}
+	feed := &PublicFeed{f}
+
+	for _, tt := range subscribeTests {
+		b.Reset()
+		feed.Subscribe(tt.args)
+		assert.Equal(t, tt.expected+string('\n'), b.String())
+	}
+}
+
+var unsubscribeTests = []struct {
+	args     interface{}
+	expected string
+}{
+	{
+		nil,
+		`{"cmd":"unsubscribe","args":null}`,
+	},
+	{
+		"test",
+		`{"cmd":"unsubscribe","args":"test"}`,
+	},
+	{
+		123,
+		`{"cmd":"unsubscribe","args":123}`,
+	},
+	{
+		map[string]interface{}{"some": "value"},
+		`{"cmd":"unsubscribe","args":{"some":"value"}}`,
+	},
+	{
+		PriceArgs{T: "price", I: "1869", M: 30},
+		`{"cmd":"unsubscribe","args":{"t":"price","i":"1869","m":30}}`,
+	},
+	{
+		DepthArgs{T: "depth", I: "1869", M: 30},
+		`{"cmd":"unsubscribe","args":{"t":"depth","i":"1869","m":30}}`,
+	},
+	{
+		TradeArgs{T: "trade", I: "1869", M: 30},
+		`{"cmd":"unsubscribe","args":{"t":"trade","i":"1869","m":30}}`,
+	},
+	{
+		TradingStatusArgs{T: "trading_status", I: "1869", M: 30},
+		`{"cmd":"unsubscribe","args":{"t":"trading_status","i":"1869","m":30}}`,
+	},
+	{
+		IndicatorArgs{T: "indicator", I: "SIX-IDX-DJI", M: "SIX"},
+		`{"cmd":"unsubscribe","args":{"t":"indicator","i":"SIX-IDX-DJI","m":"SIX"}}`,
+	},
+	{
+		NewsArgs{T: "news", S: 2},
+		`{"cmd":"unsubscribe","args":{"t":"news","s":2}}`,
+	},
+}
+
+func TestUnsubscribe(t *testing.T) {
+	b := &fakeConnection{&bytes.Buffer{}}
+	f := &Feed{b, json.NewEncoder(b), json.NewDecoder(b)}
+	feed := &PublicFeed{f}
+
+	for _, tt := range unsubscribeTests {
+		b.Reset()
+		feed.Unsubscribe(tt.args)
+		assert.Equal(t, tt.expected+string('\n'), b.String())
+	}
+}

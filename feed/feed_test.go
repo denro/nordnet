@@ -20,48 +20,20 @@ var writeTests = []struct {
 	expected string
 }{
 	{
+		&FeedCmd{"", nil},
+		`{"cmd":"","args":null}`,
+	},
+	{
 		&FeedCmd{"test", "test"},
 		`{"cmd":"test","args":"test"}`,
 	},
 	{
-		&FeedCmd{"login", LoginArgs{SessionKey: "ABC123"}},
-		`{"cmd":"login","args":{"session_key":"ABC123"}}`,
+		&FeedCmd{"test", 123},
+		`{"cmd":"test","args":123}`,
 	},
 	{
-		&FeedCmd{"login", LoginArgs{SessionKey: "ABC123", GetState: GetState{true, 2}}},
-		`{"cmd":"login","args":{"session_key":"ABC123","get_state":{"deleted_orders":true,"days":2}}}`,
-	},
-	{
-		&FeedCmd{"login", LoginArgs{SessionKey: "ABC123", GetState: GetState{true, 0}}},
-		`{"cmd":"login","args":{"session_key":"ABC123","get_state":{"deleted_orders":true}}}`,
-	},
-	{
-		&FeedCmd{"subscribe", PriceArgs{T: "price", I: "1869", M: 30}},
-		`{"cmd":"subscribe","args":{"t":"price","i":"1869","m":30}}`,
-	},
-	{
-		&FeedCmd{"subscribe", DepthArgs{T: "depth", I: "1869", M: 30}},
-		`{"cmd":"subscribe","args":{"t":"depth","i":"1869","m":30}}`,
-	},
-	{
-		&FeedCmd{"subscribe", TradeArgs{T: "trade", I: "1869", M: 30}},
-		`{"cmd":"subscribe","args":{"t":"trade","i":"1869","m":30}}`,
-	},
-	{
-		&FeedCmd{"subscribe", TradingStatusArgs{T: "trading_status", I: "1869", M: 30}},
-		`{"cmd":"subscribe","args":{"t":"trading_status","i":"1869","m":30}}`,
-	},
-	{
-		&FeedCmd{"subscribe", IndicatorArgs{T: "indicator", I: "SIX-IDX-DJI", M: "SIX"}},
-		`{"cmd":"subscribe","args":{"t":"indicator","i":"SIX-IDX-DJI","m":"SIX"}}`,
-	},
-	{
-		&FeedCmd{"subscribe", NewsArgs{T: "news", S: 2, Delay: true}},
-		`{"cmd":"subscribe","args":{"t":"news","s":2,"delay":true}}`,
-	},
-	{
-		&FeedCmd{"subscribe", NewsArgs{T: "news", S: 2}},
-		`{"cmd":"subscribe","args":{"t":"news","s":2}}`,
+		&FeedCmd{"test", map[string]interface{}{"some": "value"}},
+		`{"cmd":"test","args":{"some":"value"}}`,
 	},
 }
 
