@@ -14,7 +14,6 @@ import (
 )
 
 func GenerateCredentials(username, password, rawPem []byte) (cred string, err error) {
-	cred = ""
 	unixStr := strconv.FormatInt(time.Now().Unix(), 10)
 
 	userBase64 := base64.StdEncoding.EncodeToString(username)
