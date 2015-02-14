@@ -44,7 +44,7 @@ func main() {
 	client := api.NewAPIClient(cred)
 	client.Login()
 
-	fmt.Println(client.Account())
+	fmt.Println(client.Accounts())
 }
 ```
 
