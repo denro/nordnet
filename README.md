@@ -1,6 +1,8 @@
-# go-nordnet
+# nordnet
 
-Nordnet nEXT API Client. Comes as three separate packages:
+Go implementation of the Nordnet External API.
+
+https://api.test.nordnet.se/api-docs/index.html
 
 ## Installation
 
@@ -19,10 +21,14 @@ Util contains authentication.
 
 ## Usage
 
+
+### REST API Client
+
 ```go
 package main
 
 import (
+  "fmt"
 	"github.com/denro/nordnet/api"
 	"github.com/denro/nordnet/util"
 )
@@ -35,10 +41,37 @@ var (
 
 func main() {
   cred, _ := util.GenerateCredentials(user, pass, pemData)
-  client := api.NewAPIClient(*cred)
+  client := api.NewAPIClient(cred)
   client.Login()
 
   fmt.Println(client.Account())
+}
+```
+
+### Feed Client
+
+```go
+package main
+
+import (
+  "fmt"
+  "github.com/denro/nordnet/feed"
+)
+
+var (
+  sessionKey = "..."
+  address = "..."
+)
+
+func main() {
+  feed, _ := feed.NewPrivateFeed(address)
+  feed.Login(sessionKey, nil)
+
+  msgChan, errChan := feed.Dispatch()
+
+  for _, msg := range msgChan {
+    fmt.Println(msg)
+  }
 }
 ```
 

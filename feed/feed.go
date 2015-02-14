@@ -1,4 +1,7 @@
-// Contains everything related to the public and private feeds
+/*
+	Contains everything related to the public and private feeds
+	More information available on https://api.test.nordnet.se/next/2/api-docs/docs/feeds
+*/
 package feed
 
 import (
