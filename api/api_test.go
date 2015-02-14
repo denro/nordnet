@@ -606,12 +606,12 @@ func TestLoginIntegration(t *testing.T) {
 		assert.Equal(123, resp.ExpiresIn)
 
 		pubFeed := resp.PublicFeed
-		assert.Equal("test", pubFeed.Host)
+		assert.Equal("test", pubFeed.Hostname)
 		assert.Equal(123, pubFeed.Port)
 		assert.Equal(true, pubFeed.Encrypted)
 
 		privFeed := resp.PrivateFeed
-		assert.Equal("test", privFeed.Host)
+		assert.Equal("test", privFeed.Hostname)
 		assert.Equal(123, privFeed.Port)
 		assert.Equal(true, privFeed.Encrypted)
 

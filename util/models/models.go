@@ -224,7 +224,7 @@ type List struct {
 }
 
 type Feed struct {
-	Host      string `json:"host"`
+	Hostname  string `json:"hostname"`
 	Port      int64  `json:"port"`
 	Encrypted bool   `json:"encrypted"`
 }

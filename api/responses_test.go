@@ -388,12 +388,12 @@ var (
 		"session_key": "test",
 		"expires_in": 123,
 		"private_feed": {
-			"host": "test",
+			"hostname": "test",
 			"port": 123,
 			"encrypted": true
 		},
 		"public_feed": {
-			"host": "test",
+			"hostname": "test",
 			"port": 123,
 			"encrypted": true
 		}
