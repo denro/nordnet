@@ -7,6 +7,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	. "github.com/denro/nordnet/util/models"
 	"io/ioutil"
@@ -20,6 +21,11 @@ const (
 	NNBASEURL    = `https://api.nordnet.se/next`
 	NNSERVICE    = `NEXTAPI`
 	NNAPIVERSION = `2`
+)
+
+var (
+	TooManyRequestsError = errors.New("Too Many Requests, please wait for 10 seconds before trying again")
+	NoContentError       = errors.New("No content")
 )
 
 // Error type for errors returned by the API
@@ -392,12 +398,17 @@ func (c *APIClient) Perform(method, path string, params *Params, res interface{}
 		return
 	}
 
-	if resp.StatusCode != 200 {
+	switch resp.StatusCode {
+	case 400, 401, 404:
 		errRes := APIError{}
 		if err = json.Unmarshal(body, &errRes); err != nil {
 			return
 		}
 		return errRes
+	case 429:
+		return TooManyRequestsError
+	case 204:
+		return NoContentError
 	}
 
 	if err = json.Unmarshal(body, res); err != nil {
