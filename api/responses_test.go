@@ -448,7 +448,7 @@ var (
 
 	tickSizesJSON = `[{
 		"tick_size_id": 123,
-		"tick_size": [{
+		"ticks": [{
 			"decimals": 123,
 			"from_price": 1.1,
 			"to_price": 1.1,

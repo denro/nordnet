@@ -785,7 +785,7 @@ func TestTickSizesIntegration(t *testing.T) {
 		tickSize := resp[0]
 		assert.Equal(123, tickSize.TickSizeID)
 
-		tickSizeInterval := tickSize.TickSize[0]
+		tickSizeInterval := tickSize.Ticks[0]
 		assert.Equal(123, tickSizeInterval.Decimals)
 		assert.Equal(1.1, tickSizeInterval.FromPrice)
 		assert.Equal(1.1, tickSizeInterval.ToPrice)
@@ -806,7 +806,7 @@ func TestTickSizeIntegration(t *testing.T) {
 		tickSize := resp[0]
 		assert.Equal(123, tickSize.TickSizeID)
 
-		tickSizeInterval := tickSize.TickSize[0]
+		tickSizeInterval := tickSize.Ticks[0]
 		assert.Equal(123, tickSizeInterval.Decimals)
 		assert.Equal(1.1, tickSizeInterval.FromPrice)
 		assert.Equal(1.1, tickSizeInterval.ToPrice)
