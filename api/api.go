@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	NNBASEURL    = `https://api.nordnet.se/next`
+	NNBASEURL    = `https://www.nordnet.se/next`
 	NNSERVICE    = `NEXTAPI`
 	NNAPIVERSION = `2`
 )
@@ -388,10 +388,10 @@ func (c *APIClient) Perform(method, path string, params *Params, res interface{}
 	}
 
 	resp, err := c.perform(req)
-	defer resp.Body.Close()
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
