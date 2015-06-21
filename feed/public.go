@@ -135,7 +135,7 @@ type PublicTradingStatus struct {
 // Indicator data section in the public message
 type PublicIndicator struct {
 	I             string  `json:"i"`
-	M             int64   `json:"m"`
+	M             string  `json:"m"`
 	TickTimestamp int64   `json:"tick_timestamp"`
 	High          float64 `json:"high"`
 	Low           float64 `json:"low"`

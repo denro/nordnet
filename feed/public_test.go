@@ -170,7 +170,7 @@ var publicUnmarshalTests = []struct {
 			"type": "indicator",
 			"data": {
 				"i": "test",
-				"m": 123,
+				"m": "test",
 				"tick_timestamp": 123,
 				"high": 1.1,
 				"low": 1.1,
@@ -180,7 +180,7 @@ var publicUnmarshalTests = []struct {
 		}`,
 		&PublicMsg{"indicator", PublicIndicator{
 			I:             "test",
-			M:             123,
+			M:             "test",
 			TickTimestamp: 123,
 			High:          1.1,
 			Low:           1.1,
