@@ -25,7 +25,6 @@ const (
 
 var (
 	TooManyRequestsError = errors.New("Too Many Requests, please wait for 10 seconds before trying again")
-	NoContentError       = errors.New("No content")
 )
 
 // Error type for errors returned by the API
@@ -399,6 +398,8 @@ func (c *APIClient) Perform(method, path string, params *Params, res interface{}
 	}
 
 	switch resp.StatusCode {
+	case 204:
+		return
 	case 400, 401, 404:
 		errRes := APIError{}
 		if err = json.Unmarshal(body, &errRes); err != nil {
@@ -407,8 +408,6 @@ func (c *APIClient) Perform(method, path string, params *Params, res interface{}
 		return errRes
 	case 429:
 		return TooManyRequestsError
-	case 204:
-		return NoContentError
 	}
 
 	if err = json.Unmarshal(body, res); err != nil {
