@@ -36,7 +36,7 @@ func TestSystemStatusIntegration(t *testing.T) {
 	} else {
 		assert := assert.New(t)
 
-		assert.Equal(123, resp.Timestamp)
+		assert.EqualValues(123, resp.Timestamp)
 		assert.Equal(true, resp.ValidVersion)
 		assert.Equal(true, resp.SystemRunnnig)
 		assert.Equal("test", resp.Message)
@@ -55,7 +55,7 @@ func TestAccountsIntegration(t *testing.T) {
 		assert.NotEmpty(resp)
 
 		acc := resp[0]
-		assert.Equal(123, acc.Accno)
+		assert.EqualValues(123, acc.Accno)
 		assert.Equal("test", acc.Type)
 		assert.Equal(true, acc.Default)
 		assert.Equal("test", acc.Alias)
@@ -132,15 +132,15 @@ func TestAccountOrdersIntegration(t *testing.T) {
 		assert.NotEmpty(resp)
 
 		order := resp[0]
-		assert.Equal(123, order.Accno)
-		assert.Equal(123, order.OrderID)
+		assert.EqualValues(123, order.Accno)
+		assert.EqualValues(123, order.OrderID)
 		assert.Equal(Amount{1.1, "test"}, order.Price)
 		assert.Equal(1.1, order.Volume)
 		assert.Equal(TradableID{"test", 123}, order.Tradable)
 		assert.Equal(1.1, order.OpenVolume)
 		assert.Equal(1.1, order.TradedVolume)
 		assert.Equal("test", order.Side)
-		assert.Equal(123, order.Modified)
+		assert.EqualValues(123, order.Modified)
 		assert.Equal("test", order.Reference)
 		assert.Equal(ActivationCondition{"test", 1.1, 1.1, "test"}, order.ActivationCondition)
 		assert.Equal("test", order.PriceCondition)
@@ -217,7 +217,7 @@ func TestAccountPositionsIntegration(t *testing.T) {
 		assert.NotEmpty(resp)
 
 		position := resp[0]
-		assert.Equal(123, position.Accno)
+		assert.EqualValues(123, position.Accno)
 
 		assert.NotEmpty(position.Instrument)
 
@@ -247,15 +247,15 @@ func TestAccountTradesIntegration(t *testing.T) {
 		assert.NotEmpty(resp)
 
 		trade := resp[0]
-		assert.Equal(123, trade.Accno)
-		assert.Equal(123, trade.OrderID)
+		assert.EqualValues(123, trade.Accno)
+		assert.EqualValues(123, trade.OrderID)
 		assert.Equal("test", trade.TradeID)
 		assert.Equal(TradableID{"test", 123}, trade.Tradable)
 		assert.Equal(Amount{1.1, "test"}, trade.Price)
 		assert.Equal(1.1, trade.Volume)
 		assert.Equal("test", trade.Side)
 		assert.Equal("test", trade.Counterparty)
-		assert.Equal(123, trade.Tradetime)
+		assert.EqualValues(123, trade.Tradetime)
 	}
 }
 
@@ -389,7 +389,7 @@ func TestInstrumentLeverageFiltersIntegration(t *testing.T) {
 
 		issuer := resp.Issuers[0]
 		assert.Equal("test", issuer.Name)
-		assert.Equal(123, issuer.IssuerID)
+		assert.EqualValues(123, issuer.IssuerID)
 
 		assert.NotEmpty(resp.MarketView)
 		assert.Equal("test", resp.MarketView[0])
@@ -406,7 +406,7 @@ func TestInstrumentLeverageFiltersIntegration(t *testing.T) {
 		assert.NotEmpty(resp.Currencies)
 		assert.Equal("test", resp.Currencies[0])
 
-		assert.Equal(123, resp.NoOfInstruments)
+		assert.EqualValues(123, resp.NoOfInstruments)
 	}
 }
 
@@ -563,8 +563,8 @@ func TestListsIntegration(t *testing.T) {
 
 		list := resp[0]
 		assert.Equal("test", list.Symbol)
-		assert.Equal(123, list.DisplayOrder)
-		assert.Equal(123, list.ListID)
+		assert.EqualValues(123, list.DisplayOrder)
+		assert.EqualValues(123, list.ListID)
 		assert.Equal("test", list.Name)
 		assert.Equal("test", list.Country)
 		assert.Equal("test", list.Region)
@@ -603,16 +603,16 @@ func TestLoginIntegration(t *testing.T) {
 
 		assert.Equal("test", resp.Environment)
 		assert.Equal("test", resp.SessionKey)
-		assert.Equal(123, resp.ExpiresIn)
+		assert.EqualValues(123, resp.ExpiresIn)
 
 		pubFeed := resp.PublicFeed
 		assert.Equal("test", pubFeed.Hostname)
-		assert.Equal(123, pubFeed.Port)
+		assert.EqualValues(123, pubFeed.Port)
 		assert.Equal(true, pubFeed.Encrypted)
 
 		privFeed := resp.PrivateFeed
 		assert.Equal("test", privFeed.Hostname)
-		assert.Equal(123, privFeed.Port)
+		assert.EqualValues(123, privFeed.Port)
 		assert.Equal(true, privFeed.Encrypted)
 
 		assert.Equal("test", client.SessionKey)
@@ -663,7 +663,7 @@ func TestMarketsIntegration(t *testing.T) {
 		assert.NotEmpty(resp)
 
 		market := resp[0]
-		assert.Equal(123, market.MarketID)
+		assert.EqualValues(123, market.MarketID)
 		assert.Equal("test", market.Country)
 		assert.Equal("test", market.Name)
 	}
@@ -680,7 +680,7 @@ func TestMarketIntegration(t *testing.T) {
 		assert.NotEmpty(resp)
 
 		market := resp[0]
-		assert.Equal(123, market.MarketID)
+		assert.EqualValues(123, market.MarketID)
 		assert.Equal("test", market.Country)
 		assert.Equal("test", market.Name)
 	}
@@ -698,16 +698,16 @@ func TestNewsSearchIntegration(t *testing.T) {
 		assert.NotEmpty(resp)
 
 		news := resp[0]
-		assert.Equal(123, news.NewsID)
-		assert.Equal(123, news.SourceID)
+		assert.EqualValues(123, news.NewsID)
+		assert.EqualValues(123, news.SourceID)
 		assert.Equal("test", news.Headline)
 
 		assert.NotEmpty(news.Instruments)
-		assert.Equal(123, news.Instruments[0])
+		assert.EqualValues(123, news.Instruments[0])
 
 		assert.Equal("test", news.Type)
 		assert.Equal("test", news.Lang)
-		assert.Equal(123, news.Timestamp)
+		assert.EqualValues(123, news.Timestamp)
 	}
 }
 
@@ -722,17 +722,17 @@ func TestNewsIntegration(t *testing.T) {
 		assert.NotEmpty(resp)
 
 		news := resp[0]
-		assert.Equal(123, news.NewsID)
-		assert.Equal(123, news.SourceID)
+		assert.EqualValues(123, news.NewsID)
+		assert.EqualValues(123, news.SourceID)
 		assert.Equal("test", news.Headline)
 		assert.Equal("test", news.Body)
 
 		assert.NotEmpty(news.Instruments)
-		assert.Equal(123, news.Instruments[0])
+		assert.EqualValues(123, news.Instruments[0])
 
 		assert.Equal("test", news.Type)
 		assert.Equal("test", news.Lang)
-		assert.Equal(123, news.Timestamp)
+		assert.EqualValues(123, news.Timestamp)
 	}
 }
 
@@ -748,7 +748,7 @@ func TestNewsSourcesIntegration(t *testing.T) {
 
 		source := resp[0]
 		assert.Equal("test", source.Name)
-		assert.Equal(123, source.SourceID)
+		assert.EqualValues(123, source.SourceID)
 		assert.Equal("test", source.Level)
 
 		assert.NotEmpty(source.Countries)
@@ -767,8 +767,8 @@ func TestRealtimeAccessIntegration(t *testing.T) {
 		assert.NotEmpty(resp)
 
 		access := resp[0]
-		assert.Equal(123, access.MarketID)
-		assert.Equal(123, access.Level)
+		assert.EqualValues(123, access.MarketID)
+		assert.EqualValues(123, access.Level)
 	}
 }
 
@@ -783,10 +783,10 @@ func TestTickSizesIntegration(t *testing.T) {
 		assert.NotEmpty(resp)
 
 		tickSize := resp[0]
-		assert.Equal(123, tickSize.TickSizeID)
+		assert.EqualValues(123, tickSize.TickSizeID)
 
 		tickSizeInterval := tickSize.Ticks[0]
-		assert.Equal(123, tickSizeInterval.Decimals)
+		assert.EqualValues(123, tickSizeInterval.Decimals)
 		assert.Equal(1.1, tickSizeInterval.FromPrice)
 		assert.Equal(1.1, tickSizeInterval.ToPrice)
 		assert.Equal(1.1, tickSizeInterval.Tick)
@@ -804,10 +804,10 @@ func TestTickSizeIntegration(t *testing.T) {
 		assert.NotEmpty(resp)
 
 		tickSize := resp[0]
-		assert.Equal(123, tickSize.TickSizeID)
+		assert.EqualValues(123, tickSize.TickSizeID)
 
 		tickSizeInterval := tickSize.Ticks[0]
-		assert.Equal(123, tickSizeInterval.Decimals)
+		assert.EqualValues(123, tickSizeInterval.Decimals)
 		assert.Equal(1.1, tickSizeInterval.FromPrice)
 		assert.Equal(1.1, tickSizeInterval.ToPrice)
 		assert.Equal(1.1, tickSizeInterval.Tick)
@@ -825,13 +825,13 @@ func TestTradableInfoIntegration(t *testing.T) {
 		assert.NotEmpty(resp)
 
 		tradableInfo := resp[0]
-		assert.Equal(123, tradableInfo.MarketID)
+		assert.EqualValues(123, tradableInfo.MarketID)
 		assert.Equal(true, tradableInfo.Iceberg)
 
 		calendarDay := tradableInfo.Calendar[0]
 		assert.Equal("test", calendarDay.Date)
-		assert.Equal(123, calendarDay.Open)
-		assert.Equal(123, calendarDay.Close)
+		assert.EqualValues(123, calendarDay.Open)
+		assert.EqualValues(123, calendarDay.Close)
 
 		orderType := tradableInfo.OrderTypes[0]
 		assert.Equal("test", orderType.Type)
@@ -850,18 +850,18 @@ func TestTradableIntradayIntegration(t *testing.T) {
 		assert.NotEmpty(resp)
 
 		tradableIntraday := resp[0]
-		assert.Equal(123, tradableIntraday.MarketID)
+		assert.EqualValues(123, tradableIntraday.MarketID)
 		assert.Equal("test", tradableIntraday.Identifier)
 
 		assert.NotEmpty(tradableIntraday.Ticks)
 
 		tick := tradableIntraday.Ticks[0]
-		assert.Equal(123, tick.Timestamp)
+		assert.EqualValues(123, tick.Timestamp)
 		assert.Equal(1.1, tick.Last)
 		assert.Equal(1.1, tick.Low)
 		assert.Equal(1.1, tick.High)
 		assert.Equal(1.1, tick.Volume)
-		assert.Equal(123, tick.NoOfTrades)
+		assert.EqualValues(123, tick.NoOfTrades)
 	}
 }
 
@@ -876,7 +876,7 @@ func TestTradableTradesIntegration(t *testing.T) {
 		assert.NotEmpty(resp)
 
 		tradableTrade := resp[0]
-		assert.Equal(123, tradableTrade.MarketID)
+		assert.EqualValues(123, tradableTrade.MarketID)
 		assert.Equal("test", tradableTrade.Identifier)
 
 		assert.NotEmpty(tradableTrade.Trades)
@@ -884,7 +884,7 @@ func TestTradableTradesIntegration(t *testing.T) {
 		trade := tradableTrade.Trades[0]
 		assert.Equal("test", trade.BrokerBuying)
 		assert.Equal("test", trade.BrokerSelling)
-		assert.Equal(123, trade.Volume)
+		assert.EqualValues(123, trade.Volume)
 		assert.Equal(1.1, trade.Price)
 		assert.Equal("test", trade.TradeID)
 		assert.Equal("test", trade.TradeType)
@@ -893,7 +893,7 @@ func TestTradableTradesIntegration(t *testing.T) {
 
 // Assert Order type
 func assertOrder(assert *assert.Assertions, order *OrderReply) {
-	assert.Equal(123, order.OrderID)
+	assert.EqualValues(123, order.OrderID)
 	assert.Equal("test", order.ResultCode)
 	assert.Equal("test", order.OrderState)
 	assert.Equal("test", order.ActionState)
@@ -905,28 +905,28 @@ func assertIndicator(assert *assert.Assertions, indicator *Indicator) {
 	assert.Equal("test", indicator.Name)
 	assert.Equal("test", indicator.Src)
 	assert.Equal("test", indicator.Identifier)
-	assert.Equal(123, indicator.Delayed)
+	assert.EqualValues(123, indicator.Delayed)
 	assert.Equal(true, indicator.OnlyEod)
 	assert.Equal("test", indicator.Open)
 	assert.Equal("test", indicator.Close)
 	assert.Equal("test", indicator.Country)
 	assert.Equal("test", indicator.Type)
 	assert.Equal("test", indicator.Region)
-	assert.Equal(123, indicator.InstrumentID)
+	assert.EqualValues(123, indicator.InstrumentID)
 }
 
 // Assert Instrument type
 func assertInstrument(assert *assert.Assertions, instrument *Instrument) {
-	assert.Equal(123, instrument.InstrumentID)
+	assert.EqualValues(123, instrument.InstrumentID)
 
 	assert.NotEmpty(instrument.Tradables)
 	tradable := instrument.Tradables[0]
 
-	assert.Equal(123, tradable.MarketID)
+	assert.EqualValues(123, tradable.MarketID)
 	assert.Equal("test", tradable.Identifier)
-	assert.Equal(123, tradable.TickSizeID)
+	assert.EqualValues(123, tradable.TickSizeID)
 	assert.Equal(1.1, tradable.LotSize)
-	assert.Equal(123, tradable.DisplayOrder)
+	assert.EqualValues(123, tradable.DisplayOrder)
 
 	assert.Equal("test", instrument.Currency)
 	assert.Equal("test", instrument.InstrumentGroupType)
@@ -946,7 +946,7 @@ func assertInstrument(assert *assert.Assertions, instrument *Instrument) {
 	assert.NotEmpty(instrument.Underlyings)
 	underlying := instrument.Underlyings[0]
 
-	assert.Equal(123, underlying.InstrumentID)
+	assert.EqualValues(123, underlying.InstrumentID)
 	assert.Equal("test", underlying.Symbol)
 	assert.Equal("test", underlying.IsinCode)
 }
