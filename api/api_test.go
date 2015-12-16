@@ -888,6 +888,7 @@ func TestTradableTradesIntegration(t *testing.T) {
 		assert.Equal(1.1, trade.Price)
 		assert.Equal("test", trade.TradeID)
 		assert.Equal("test", trade.TradeType)
+		assert.EqualValues(123, trade.TradeTimestamp)
 	}
 }
 

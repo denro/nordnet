@@ -330,10 +330,11 @@ type PublicTrades struct {
 }
 
 type PublicTrade struct {
-	BrokerBuying  string  `json:"broker_buying"`
-	BrokerSelling string  `json:"broker_selling"`
-	Volume        int64   `json:"volume"`
-	Price         float64 `json:"price"`
-	TradeID       string  `json:"trade_id"`
-	TradeType     string  `json:"trade_type"`
+	BrokerBuying   string  `json:"broker_buying"`
+	BrokerSelling  string  `json:"broker_selling"`
+	Volume         int64   `json:"volume"`
+	Price          float64 `json:"price"`
+	TradeID        string  `json:"trade_id"`
+	TradeType      string  `json:"trade_type"`
+	TradeTimestamp int64   `json:"trade_timestamp"`
 }

@@ -492,7 +492,8 @@ var (
 			"volume": 123,
 			"price": 1.1,
 			"trade_id": "test",
-			"trade_type": "test"
+			"trade_type": "test",
+			"trade_timestamp": 123
 		}]
 	}]`
 )
