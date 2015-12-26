@@ -59,10 +59,10 @@ type Ledger struct {
 
 type Order struct {
 	Accno               int64               `json:"accno"`
-	OrderID             int64               `json:"order_id"`
+	OrderId             int64               `json:"order_id"`
 	Price               Amount              `json:"price"`
 	Volume              float64             `json:"volume"`
-	Tradable            TradableID          `json:"tradable"`
+	Tradable            TradableId          `json:"tradable"`
 	OpenVolume          float64             `json:"open_volume"`
 	TradedVolume        float64             `json:"traded_volume"`
 	Side                string              `json:"side"`
@@ -76,9 +76,9 @@ type Order struct {
 	OrderState          string              `json:"order_state"`
 }
 
-type TradableID struct {
+type TradableId struct {
 	Identifier string `json:"identifier"`
-	MarketID   int64  `json:"market_id"`
+	MarketId   int64  `json:"market_id"`
 }
 
 type ActivationCondition struct {
@@ -94,7 +94,7 @@ type Validity struct {
 }
 
 type OrderReply struct {
-	OrderID     int64  `json:"order_id"`
+	OrderId     int64  `json:"order_id"`
 	ResultCode  string `json:"result_code"`
 	OrderState  string `json:"order_state"`
 	ActionState string `json:"action_state"`
@@ -114,7 +114,7 @@ type Position struct {
 }
 
 type Instrument struct {
-	InstrumentID        int64            `json:"instrument_id"`
+	InstrumentId        int64            `json:"instrument_id"`
 	Tradables           []Tradable       `json:"tradables"`
 	Currency            string           `json:"currency"`
 	InstrumentGroupType string           `json:"instrument_group_type"`
@@ -134,23 +134,23 @@ type Instrument struct {
 }
 
 type Tradable struct {
-	TradableID
-	TickSizeID   int64   `json:"tick_size_id"`
+	TradableId
+	TickSizeId   int64   `json:"tick_size_id"`
 	LotSize      float64 `json:"lot_size"`
 	DisplayOrder int64   `json:"display_order"`
 }
 
 type UnderlyingInfo struct {
-	InstrumentID int64  `json:"instrument_id"`
+	InstrumentId int64  `json:"instrument_id"`
 	Symbol       string `json:"symbol"`
 	IsinCode     string `json:"isin_code"`
 }
 
 type Trade struct {
 	Accno        int64      `json:"accno"`
-	OrderID      int64      `json:"order_id"`
-	TradeID      string     `json:"trade_id"`
-	Tradable     TradableID `json:"tradable"`
+	OrderId      int64      `json:"order_id"`
+	TradeId      string     `json:"trade_id"`
+	Tradable     TradableId `json:"tradable"`
 	Price        Amount     `json:"price"`
 	Volume       float64    `json:"volume"`
 	Side         string     `json:"side"`
@@ -174,7 +174,7 @@ type Indicator struct {
 	Country      string `json:"country"`
 	Type         string `json:"type"`
 	Region       string `json:"region"`
-	InstrumentID int64  `json:"instrument_id"`
+	InstrumentId int64  `json:"instrument_id"`
 }
 
 type LeverageFilter struct {
@@ -189,7 +189,7 @@ type LeverageFilter struct {
 
 type Issuer struct {
 	Name     string `json:"name"`
-	IssuerID int64  `json:"issuer_id"`
+	IssuerId int64  `json:"issuer_id"`
 }
 
 type OptionPair struct {
@@ -217,7 +217,7 @@ type InstrumentType struct {
 type List struct {
 	Symbol       string `json:"symbol"`
 	DisplayOrder int64  `json:"display_order"`
-	ListID       int64  `json:"list_id"`
+	ListId       int64  `json:"list_id"`
 	Name         string `json:"name"`
 	Country      string `json:"country"`
 	Region       string `json:"region"`
@@ -242,14 +242,14 @@ type Login struct {
 }
 
 type Market struct {
-	MarketID int64  `json:"market_id"`
+	MarketId int64  `json:"market_id"`
 	Country  string `json:"country"`
 	Name     string `json:"name"`
 }
 
 type NewsPreview struct {
-	NewsID      int64   `json:"news_id"`
-	SourceID    int64   `json:"source_id"`
+	NewsId      int64   `json:"news_id"`
+	SourceId    int64   `json:"source_id"`
 	Headline    string  `json:"headline"`
 	Instruments []int64 `json:"instruments"`
 	Lang        string  `json:"lang"`
@@ -258,8 +258,8 @@ type NewsPreview struct {
 }
 
 type NewsItem struct {
-	NewsID      int64   `json:"news_id"`
-	SourceID    int64   `json:"source_id"`
+	NewsId      int64   `json:"news_id"`
+	SourceId    int64   `json:"source_id"`
 	Headline    string  `json:"headline"`
 	Body        string  `json:"body"`
 	Instruments []int64 `json:"instruments"`
@@ -270,18 +270,18 @@ type NewsItem struct {
 
 type NewsSource struct {
 	Name      string   `json:"name"`
-	SourceID  int64    `json:"source_id"`
+	SourceId  int64    `json:"source_id"`
 	Level     string   `json:"level"`
 	Countries []string `json:"countries"`
 }
 
 type RealtimeAccess struct {
-	MarketID int64 `json:"market_id"`
+	MarketId int64 `json:"market_id"`
 	Level    int64 `json:"level"`
 }
 
 type TicksizeTable struct {
-	TickSizeID int64              `json:"tick_size_id"`
+	TickSizeId int64              `json:"tick_size_id"`
 	Ticks      []TickSizeInterval `json:"ticks`
 }
 
@@ -293,7 +293,7 @@ type TickSizeInterval struct {
 }
 
 type TradableInfo struct {
-	MarketID   int64         `json:"market_id"`
+	MarketId   int64         `json:"market_id"`
 	Iceberg    bool          `json:"iceberg"`
 	Calendar   []CalendarDay `json:"calendar"`
 	OrderTypes []OrderType   `json:"order_types"`
@@ -311,7 +311,7 @@ type OrderType struct {
 }
 
 type IntradayGraph struct {
-	TradableID
+	TradableId
 	Ticks []IntradayTick `json:"ticks"`
 }
 
@@ -325,7 +325,7 @@ type IntradayTick struct {
 }
 
 type PublicTrades struct {
-	TradableID
+	TradableId
 	Trades []PublicTrade `json:"trades"`
 }
 
@@ -334,7 +334,7 @@ type PublicTrade struct {
 	BrokerSelling  string  `json:"broker_selling"`
 	Volume         int64   `json:"volume"`
 	Price          float64 `json:"price"`
-	TradeID        string  `json:"trade_id"`
+	TradeId        string  `json:"trade_id"`
 	TradeType      string  `json:"trade_type"`
 	TradeTimestamp int64   `json:"trade_timestamp"`
 }

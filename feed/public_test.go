@@ -85,7 +85,7 @@ var publicUnmarshalTests = []struct {
 			Volume:         1.1,
 			BrokerBuying:   "test",
 			BrokerSelling:  "test",
-			TradeID:        "test",
+			TradeId:        "test",
 			TradeType:      "test",
 		}},
 	},
@@ -201,10 +201,10 @@ var publicUnmarshalTests = []struct {
 			}
 		}`,
 		&PublicMsg{"news", PublicNews{
-			ItemID:      "test",
+			ItemId:      "test",
 			Lang:        "test",
 			Datetime:    "test",
-			SourceID:    "test",
+			SourceId:    "test",
 			Headline:    "test",
 			Instruments: []string{"test"},
 		}},
@@ -313,8 +313,8 @@ var subscribeTests = []struct {
 		`{"cmd":"subscribe","args":{"t":"trading_status","i":"1869","m":30}}`,
 	},
 	{
-		IndicatorArgs{T: "indicator", I: "SIX-IDX-DJI", M: "SIX"},
-		`{"cmd":"subscribe","args":{"t":"indicator","i":"SIX-IDX-DJI","m":"SIX"}}`,
+		IndicatorArgs{T: "indicator", I: "SIX-IdX-DJI", M: "SIX"},
+		`{"cmd":"subscribe","args":{"t":"indicator","i":"SIX-IdX-DJI","m":"SIX"}}`,
 	},
 	{
 		NewsArgs{T: "news", S: 2, Delay: true},
@@ -375,8 +375,8 @@ var unsubscribeTests = []struct {
 		`{"cmd":"unsubscribe","args":{"t":"trading_status","i":"1869","m":30}}`,
 	},
 	{
-		IndicatorArgs{T: "indicator", I: "SIX-IDX-DJI", M: "SIX"},
-		`{"cmd":"unsubscribe","args":{"t":"indicator","i":"SIX-IDX-DJI","m":"SIX"}}`,
+		IndicatorArgs{T: "indicator", I: "SIX-IdX-DJI", M: "SIX"},
+		`{"cmd":"unsubscribe","args":{"t":"indicator","i":"SIX-IdX-DJI","m":"SIX"}}`,
 	},
 	{
 		NewsArgs{T: "news", S: 2},

@@ -91,7 +91,7 @@ type PublicTrade struct {
 	Volume         float64 `json:"volume"`
 	BrokerBuying   string  `json:"broker_buying"`
 	BrokerSelling  string  `json:"broker_selling"`
-	TradeID        string  `json:"trade_id"`
+	TradeId        string  `json:"trade_id"`
 	TradeType      string  `json:"trade_type"`
 }
 
@@ -145,10 +145,10 @@ type PublicIndicator struct {
 
 // News data section in the public message
 type PublicNews struct {
-	ItemID      string   `json:"itemid"`
+	ItemId      string   `json:"itemid"`
 	Lang        string   `json:"lang"`
 	Datetime    string   `json:"datetime"`
-	SourceID    string   `json:"sourceid"`
+	SourceId    string   `json:"sourceid"`
 	Headline    string   `json:"headline"`
 	Instruments []string `json:"instruments"`
 }
