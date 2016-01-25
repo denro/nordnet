@@ -9,12 +9,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	. "github.com/denro/nordnet/util/models"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sync"
 	"time"
+
+	. "github.com/denro/nordnet/util/models"
 )
 
 const (
