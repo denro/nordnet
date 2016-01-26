@@ -20,60 +20,8 @@ Util contains authentication.
 
 
 ## Usage
+See example
 
-
-### REST API Client
-
-```go
-package main
-
-import (
-	"fmt"
-	"github.com/denro/nordnet/api"
-	"github.com/denro/nordnet/util"
-)
-
-var (
-	pemData = []byte(`-----BEGIN PUBLIC KEY-----`)
-	user    = []byte(`...`)
-	pass    = []byte(`...`)
-)
-
-func main() {
-	cred, _ := util.GenerateCredentials(user, pass, pemData)
-	client := api.NewAPIClient(cred)
-	client.Login()
-
-	fmt.Println(client.Accounts())
-}
-```
-
-### Feed Client
-
-```go
-package main
-
-import (
-	"fmt"
-	"github.com/denro/nordnet/feed"
-)
-
-var (
-	sessionKey = "..."
-	address    = "..."
-)
-
-func main() {
-	feed, _ := feed.NewPrivateFeed(address)
-	feed.Login(sessionKey, nil)
-
-	msgChan, errChan := feed.Dispatch()
-
-	for _, msg := range msgChan {
-		fmt.Println(msg)
-	}
-}
-```
 
 ## Contributing
 

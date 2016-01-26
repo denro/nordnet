@@ -2,7 +2,7 @@ package feed
 
 import (
 	"encoding/json"
-	
+
 	"github.com/denro/nordnet/util/models"
 )
 
@@ -58,10 +58,7 @@ func (pm *PrivateMsg) UnmarshalJSON(b []byte) (err error) {
 }
 
 // Starts reading from the connection, returns channels for reading the messages and errors
-func (pf *PrivateFeed) Dispatch() (msgChan chan *PrivateMsg, errChan chan error) {
-	msgChan = make(chan *PrivateMsg)
-	errChan = make(chan error)
-
+func (pf *PrivateFeed) Dispatch(msgChan chan<- *PrivateMsg, errChan chan<- error) {
 	go func(d *json.Decoder, mc chan<- *PrivateMsg, ec chan<- error) {
 		var (
 			pMsg *PrivateMsg
