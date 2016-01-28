@@ -264,7 +264,10 @@ func TestPublicFeedDispatch(t *testing.T) {
 		b.WriteString(tt.json + string('\n'))
 	}
 
-	msgChan, errChan := feed.Dispatch()
+	msgChan := make(chan *PublicMsg)
+	errChan := make(chan error)
+
+	feed.Dispatch(msgChan, errChan)
 
 	for _, tt := range publicDispatchTests {
 		select {

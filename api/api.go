@@ -9,16 +9,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	. "github.com/denro/nordnet/util/models"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sync"
 	"time"
+
+	. "github.com/denro/nordnet/util/models"
 )
 
 const (
-	NNBASEURL    = `https://www.nordnet.se/next`
+	NNBASEURL    = `https://api.test.nordnet.se/next`
 	NNSERVICE    = `NEXTAPI`
 	NNAPIVERSION = `2`
 )
