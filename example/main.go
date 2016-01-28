@@ -1,3 +1,4 @@
+// Simple example which authenticate, a few rest api requests and then starts a subscription to trades and depths
 package main
 
 import (
@@ -5,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"encoding/json"
 
 	"github.com/denro/nordnet/api"
 	"github.com/denro/nordnet/feed"
@@ -12,6 +14,12 @@ import (
 )
 
 func main() {
+
+	pretty := func (v interface{}) string {
+		b, _ := json.Marshal(v)
+		return fmt.Sprintf("%s\n",string(b))
+	}
+
 	// Never hardcode secrets to your code
 	// export NORDNET_USER="..."
 	user := []byte(os.Getenv("NORDNET_USER"))
@@ -34,16 +42,18 @@ func main() {
 
 	// Take the rest api for a ride
 	status, _ := client.SystemStatus()
-	fmt.Printf("\n%#v\n\n", status)
+	pretty(status)
 
 	accounts, _ := client.Accounts()
 	for _, account := range accounts {
 		accountinfo, _ := client.Account(account.Accno)
-		fmt.Printf("%#v\n\n", accountinfo)
+		pretty(accountinfo)
 	}
 
-	markets, _ := client.Markets()
-	fmt.Printf("%#v\n\n", markets)
+	instrument, _ := client.SearchInstruments(&api.Params{
+    "query": "volvo-b",
+	})
+	pretty(instrument)
 
 	// Open private feed
 	privAddr := fmt.Sprintf("%s:%d", session.PrivateFeed.Hostname, session.PrivateFeed.Port)
@@ -55,26 +65,28 @@ func main() {
 	pubfeed, _ := feed.NewPublicFeed(pubAddr)
 	pubfeed.Login(client.SessionKey, nil)
 
-	privmsgChan := make(chan *feed.PrivateMsg)
-	pubmsgChan := make(chan *feed.PublicMsg)
-	errChan := make(chan error)
-
-	privfeed.Dispatch(privmsgChan, errChan)
-	pubfeed.Dispatch(pubmsgChan, errChan)
-
-	pubfeed.Subscribe(&feed.TradingStatusArgs{T: "trading_status", I: "1869", M: 30})
-
 	exit := make(chan os.Signal, 1)
 	signal.Notify(exit, syscall.SIGINT, syscall.SIGTERM)
 
+	privmsgChan := make(chan *feed.PrivateMsg, 1000)
+	pubmsgChan := make(chan *feed.PublicMsg, 1000)
+	errChan := make(chan error, 1000)
+	privfeed.Dispatch(privmsgChan, errChan)
+	pubfeed.Dispatch(pubmsgChan, errChan)
+
+	// Start subscriptions
+	pubfeed.Subscribe(feed.PriceArgs{T: "price", I: "101", M: 11})
+	pubfeed.Subscribe(feed.DepthArgs{T: "depth", I: "101", M: 11})
+
+	// Receive messages until exit channel is messaged
 	for {
 		select {
 		case msg := <-privmsgChan:
-			fmt.Printf("Private message: %+v\n", msg)
+			fmt.Printf("Private feed: %s\n", pretty(msg))
 		case msg := <-pubmsgChan:
-			fmt.Printf("Public message: %+v\n", msg)
+			fmt.Printf("Public feed: %s\n", pretty(msg))
 		case msg := <-errChan:
-			fmt.Printf("Error message: %+v\n", msg)
+			fmt.Printf("Error chan: %s\n", pretty(msg))
 		case <-exit:
 			privfeed.Close()
 			pubfeed.Close()
