@@ -18,9 +18,10 @@ import (
 )
 
 const (
-	NNBASEURL    = `https://www.nordnet.se/next`
-	NNSERVICE    = `NEXTAPI`
-	NNAPIVERSION = `2`
+	NNBASEURL     = `https://www.nordnet.se/next`
+	NNTESTBASEURL = `https://api.test.nordnet.se/next`
+	NNSERVICE     = `NEXTAPI`
+	NNAPIVERSION  = `2`
 )
 
 var (
@@ -54,6 +55,16 @@ type APIClient struct {
 func NewAPIClient(credentials string) *APIClient {
 	return &APIClient{
 		URL:         NNBASEURL,
+		Service:     NNSERVICE,
+		Version:     NNAPIVERSION,
+		Credentials: credentials,
+	}
+}
+
+// Constructor function for creating a client pointing to the NEXT test environment.
+func NewAPITestClient(credentials string) *APIClient {
+	return &APIClient{
+		URL:         NNTESTBASEURL,
 		Service:     NNSERVICE,
 		Version:     NNAPIVERSION,
 		Credentials: credentials,
