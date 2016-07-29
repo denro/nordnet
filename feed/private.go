@@ -2,6 +2,7 @@ package feed
 
 import (
 	"encoding/json"
+
 	"github.com/denro/nordnet/util/models"
 )
 

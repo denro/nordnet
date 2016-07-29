@@ -3,9 +3,11 @@ package feed
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/denro/nordnet/util/models"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/denro/nordnet/util/models"
 )
 
 var privateUnmarshalTests = []struct {

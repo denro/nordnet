@@ -4,11 +4,13 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	. "github.com/denro/nordnet/util/models"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	. "github.com/denro/nordnet/util/models"
 )
 
 var defSessionKey = "DEFAULTSESSION"
