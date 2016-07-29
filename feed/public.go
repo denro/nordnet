@@ -210,11 +210,8 @@ func (pm *PublicMsg) UnmarshalJSON(b []byte) (err error) {
 	return
 }
 
-// Starts reading from the connection, returns channels for reading the messages and errors
-func (pf *PublicFeed) Dispatch() (msgChan chan *PublicMsg, errChan chan error) {
-	msgChan = make(chan *PublicMsg)
-	errChan = make(chan error)
-
+// Starts reading from the connection and sends data through given channels
+func (pf *PublicFeed) Dispatch(msgChan chan *PublicMsg, errChan chan error) {
 	go func(d *json.Decoder, mc chan<- *PublicMsg, ec chan<- error) {
 		var (
 			pMsg *PublicMsg

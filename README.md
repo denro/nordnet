@@ -67,7 +67,9 @@ func main() {
 	feed, _ := feed.NewPrivateFeed(address)
 	feed.Login(sessionKey, nil)
 
-	msgChan, errChan := feed.Dispatch()
+  msgChan := make(chan *PrivateMsg)
+  errChan := make(chan error)
+	feed.Dispatch()
 
 	for _, msg := range msgChan {
 		fmt.Println(msg)
