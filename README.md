@@ -6,18 +6,7 @@ https://api.test.nordnet.se/api-docs/index.html
 
 ## Installation
 
-The APIClient is used for making REST requests, such as making orders.
-
-  $ go get github.com/denro/nordnet/api
-
-The Feed package is for reading realtime prices and trades.
-
-  $ go get github.com/denro/nordnet/feed
-
-Util contains authentication.
-
-  $ go get github.com/denro/nordnet/util
-
+`go get github.com/denro/nordnet`
 
 ## Usage
 
