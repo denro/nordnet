@@ -1,8 +1,12 @@
 # nordnet
 
+[![Build Status](https://travis-ci.org/denro/nordnet.svg?branch=master)](https://travis-ci.org/denro/nordnet)
+[![GoDoc](https://godoc.org/github.com/denro/nordnet?status.svg)](http://godoc.org/github.com/denro/nordnet)
+
 Go implementation of the Nordnet External API.
 
 https://api.test.nordnet.se/api-docs/index.html
+
 
 ## Installation
 
