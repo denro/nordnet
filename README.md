@@ -1,7 +1,8 @@
-# nordnet
+# Nordnet
 
 [![Build Status](https://travis-ci.org/denro/nordnet.svg?branch=master)](https://travis-ci.org/denro/nordnet)
 [![GoDoc](https://godoc.org/github.com/denro/nordnet?status.svg)](http://godoc.org/github.com/denro/nordnet)
+[![Go Report Card](https://goreportcard.com/badge/github.com/denro/nordnet)](https://goreportcard.com/report/github.com/denro/nordnet)
 
 Go implementation of the Nordnet External API.
 
