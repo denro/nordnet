@@ -282,7 +282,7 @@ type RealtimeAccess struct {
 
 type TicksizeTable struct {
 	TickSizeId int64              `json:"tick_size_id"`
-	Ticks      []TickSizeInterval `json:"ticks`
+	Ticks      []TickSizeInterval `json:"ticks"`
 }
 
 type TickSizeInterval struct {

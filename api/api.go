@@ -221,7 +221,7 @@ func (c *APIClient) InstrumentOptionPairFilters(id int64, params *Params) (res *
 	return
 }
 
-// Lookup specfic instrument with prededfined fields. Please note that this is not a search, only exact matches is returned.
+// Lookup specific instrument with prededfined fields. Please note that this is not a search, only exact matches is returned.
 func (c *APIClient) InstrumentLookup(lookupType string, lookup string) (res []Instrument, err error) {
 	res = []Instrument{}
 	err = c.Perform("GET", fmt.Sprintf("instruments/lookup/%s/%s", lookupType, lookup), nil, &res)

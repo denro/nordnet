@@ -7,7 +7,7 @@
 
 	The feed package is an implementation for subscribing to the real-time events.
 
-	The util package contans all models used by the packages aswell as a function for generating credentials.
+	The util package contans all models used by the packages as well as a function for generating credentials.
 
 */
 
