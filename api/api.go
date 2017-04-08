@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	. "github.com/denro/nordnet/util/models"
+	. "github.com/lonnblad/nordnet/util/models"
 )
 
 const (
