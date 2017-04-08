@@ -13,8 +13,15 @@ import (
 	"time"
 )
 
+const STOCKHOLM_TIMEZONE = "Europe/Stockholm"
+
 func GenerateCredentials(username, password, rawPem []byte) (cred string, err error) {
-	ms := time.Now().Unix() * 1000
+	var loc *time.Location
+	if loc, err = time.LoadLocation(STOCKHOLM_TIMEZONE); err != nil {
+		return
+	}
+	ms := time.Now().In(loc).Unix() * 1000
+
 	unixStr := strconv.FormatInt(ms, 10)
 
 	userBase64 := base64.StdEncoding.EncodeToString(username)

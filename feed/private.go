@@ -3,7 +3,7 @@ package feed
 import (
 	"encoding/json"
 
-	"github.com/denro/nordnet/util/models"
+	"github.com/lonnblad/nordnet/util/models"
 )
 
 type PrivateFeed struct {
