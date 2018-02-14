@@ -42,6 +42,8 @@ func main() {
 }
 ```
 
+To use Nordnet test credentials, try `client := api.NewAPITestClient(cred)`.
+
 ### Feed Client
 
 ```go
